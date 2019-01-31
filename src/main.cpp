@@ -76,8 +76,8 @@ int32_t main (int32_t argc, char* argv[])
 		BHAdjusting(PValuesPos_salmon, AdjPValuesPos_salmon);
 		BHAdjusting(PValuesNeg_salmon, AdjPValuesNeg_salmon);
 
-		WriteRegionalPvalue(OutputPrefix+"_pvalue_regional_pos", Transcripts, dt.TransCov, PValuesPos_salmon, AdjPValuesPos_salmon);
-		WriteRegionalPvalue(OutputPrefix+"_pvalue_regional_neg", Transcripts, dt.TransCov, PValuesNeg_salmon, AdjPValuesNeg_salmon);
+		WriteRegionalPvalue(OutputPrefix+"_pvalue_regional_pos.tsv", Transcripts, dt.TransCov, PValuesPos_salmon, AdjPValuesPos_salmon);
+		WriteRegionalPvalue(OutputPrefix+"_pvalue_regional_neg.tsv", Transcripts, dt.TransCov, PValuesNeg_salmon, AdjPValuesNeg_salmon);
 
 		// collect initial adjustment list
 		vector<int32_t> AdjustmentList;
@@ -116,7 +116,7 @@ int32_t main (int32_t argc, char* argv[])
 			vector<double> PValuesNeg;
 			vector<bool> Choices;
 			dt.PValue_overall_empirical(AdjustmentList, PValuesPos, PValuesNeg, Choices);
-			WriteOverallPvalue(OutputPrefix+"_initial_pvalue_overall", AdjustmentList, Transcripts, dt.TransCov, dt, PValuesPos, PValuesNeg, Choices);
+			WriteOverallPvalue(OutputPrefix+"_initial_pvalue_overall.tsv", AdjustmentList, Transcripts, dt.TransCov, dt, PValuesPos, PValuesNeg, Choices);
 		}
 
 		// initial LP
@@ -128,7 +128,7 @@ int32_t main (int32_t argc, char* argv[])
 			vector< vector<double> > newAssignment;
 			map< string,vector<MovingRead_t> > MovingMat;
 			vector<double> LPExp = LP.ReassignReads(newAssignment, MovingMat);
-			WriteNewAssignment_NumReads(OutputPrefix+"_LP"+to_string(round), Transcripts, AdjustmentList, newAssignment);
+			WriteNewAssignment_NumReads(OutputPrefix+"_LP"+to_string(round)+".tsv", Transcripts, AdjustmentList, newAssignment);
 
 			// calculate LP P value
 			// reset everything to salmon
@@ -155,8 +155,8 @@ int32_t main (int32_t argc, char* argv[])
 			}
 			BHAdjusting(PValuesPos_lp, AdjPValuesPos_lp);
 			BHAdjusting(PValuesNeg_lp, AdjPValuesNeg_lp);
-			WriteRegionalPvalue(OutputPrefix+"_pvalue_regional_pos_LP"+to_string(round), Transcripts, dt.TransCov, PValuesPos_lp, AdjPValuesPos_lp);
-			WriteRegionalPvalue(OutputPrefix+"_pvalue_regional_neg_LP"+to_string(round), Transcripts, dt.TransCov, PValuesNeg_lp, AdjPValuesNeg_lp);
+			WriteRegionalPvalue(OutputPrefix+"_pvalue_regional_pos_LP"+to_string(round)+".tsv", Transcripts, dt.TransCov, PValuesPos_lp, AdjPValuesPos_lp);
+			WriteRegionalPvalue(OutputPrefix+"_pvalue_regional_neg_LP"+to_string(round)+".tsv", Transcripts, dt.TransCov, PValuesNeg_lp, AdjPValuesNeg_lp);
 
 			// update adjustment list
 			int32_t oldsize = AdjustmentList.size();
@@ -175,8 +175,8 @@ int32_t main (int32_t argc, char* argv[])
 		vector< vector<double> > newAssignment;
 		map< string,vector<MovingRead_t> > MovingMat;
 		vector<double> LPExp = LP.ReassignReads(newAssignment, MovingMat);
-		WriteNewAssignment_NumReads(OutputPrefix+"_LP_refined", Transcripts, AdjustmentList, newAssignment);
-		WriteNewAssignment_Distribution(OutputPrefix+"_LP_refined_dist", Transcripts, AdjustmentList, newAssignment);
+		WriteNewAssignment_NumReads(OutputPrefix+"_adjusted_quantification.tsv", Transcripts, AdjustmentList, newAssignment);
+		WriteNewAssignment_Distribution(OutputPrefix+"_adjusted_observed_distribution.dat", Transcripts, AdjustmentList, newAssignment);
 
 		// update observed distribution and deletion score
 		dt.UpdateObserved(Observed);
@@ -193,8 +193,8 @@ int32_t main (int32_t argc, char* argv[])
 		}
 		BHAdjusting(PValuesPos_lp, AdjPValuesPos_lp);
 		BHAdjusting(PValuesNeg_lp, AdjPValuesNeg_lp);
-		WriteRegionalPvalue(OutputPrefix+"_pvalue_regional_pos_LP_refined", Transcripts, dt.TransCov, PValuesPos_lp, AdjPValuesPos_lp);
-		WriteRegionalPvalue(OutputPrefix+"_pvalue_regional_neg_LP_refined", Transcripts, dt.TransCov, PValuesNeg_lp, AdjPValuesNeg_lp);
+		WriteRegionalPvalue(OutputPrefix+"_pvalue_regional_pos_LP_refined.tsv", Transcripts, dt.TransCov, PValuesPos_lp, AdjPValuesPos_lp);
+		WriteRegionalPvalue(OutputPrefix+"_pvalue_regional_neg_LP_refined.tsv", Transcripts, dt.TransCov, PValuesNeg_lp, AdjPValuesNeg_lp);
 
 		// sanity check about coverage and deletion score
 		assert(dt.TransCov.size() == dt.DeletionScore_pos.size() && dt.TransCov.size() == dt.DeletionScore_neg.size());
@@ -211,6 +211,6 @@ int32_t main (int32_t argc, char* argv[])
 		vector<bool> Choices;
 		dt.PValue_overall_empirical(PValuesPos, PValuesNeg, Choices);
 		// OldWriteOverallPvalue(OutputPrefix+"_old_pvalue_overall", Transcripts, dt.TransCov, dt, PValues, Choices);
-		WriteOverallPvalue(OutputPrefix+"_pvalue_overall", Transcripts, dt.TransCov, dt, PValuesPos, PValuesNeg, Choices);
+		WriteOverallPvalue(OutputPrefix+"_unadjustable_pvalue.tsv", Transcripts, dt.TransCov, dt, PValuesPos, PValuesNeg, Choices);
 	}
 };

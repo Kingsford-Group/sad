@@ -346,7 +346,7 @@ void WriteOverallPvalue(string outputfile, const vector<Transcript_t>& Transcrip
 	// write non-negative p value to file
 	ofstream output(outputfile, ios::out);
 	int32_t count = 0;
-	output << "#Name\tCoverage\tAnomalyScorePos\tRegionStartPos\tRegionEndPos\tPValue_Pos\tAdjPValue_Pos\tAnomalyScoreNeg\tRegionStartNeg\tRegionEndNeg\tPValue_Neg\tAdjPValue_Neg\tMinAdjPValue\tChoice\n";
+	output << "#Name\tCoverage\tAnomalyScoreNeg\tRegionStartNeg\tRegionEndNeg\tPValue_Neg\tAdjPValue_Neg\tAnomalyScorePos\tRegionStartPos\tRegionEndPos\tPValue_Pos\tAdjPValue_Pos\tMinAdjPValue\tChoice\n";
 	for (int32_t i = 0; i < PValuesPos.size(); i++) {
 		if (PValuesPos[i] < -0.5 || PValuesNeg[i] < -0.5)
 			continue;

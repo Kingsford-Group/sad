@@ -72,9 +72,9 @@ void ReadPosBias(boost::iostreams::filtering_istream& fpin, uint32_t& numModels,
 	fpin.read((char*)(&numModels), sizeof(uint32_t));
 	lenBounds.resize(numModels);
 	masses.clear();
-	for(int i=0; i<numModels; i++)
+	for(int32_t i=0; i<numModels; i++)
 		fpin.read((char*)(&lenBounds[i]), sizeof(uint32_t));
-	for(int i=0; i<numModels; i++){
+	for(int32_t i=0; i<numModels; i++){
 		uint32_t modelLen=0;
 		fpin.read((char*)(&modelLen), sizeof(uint32_t));
 		vector<double> tmpmodel(modelLen, 0);
@@ -132,19 +132,19 @@ public:
 		GCBiasRatio=Eigen::MatrixXd::Ones(Condbin, GCbin);
 		if(dtype1!=dtype2){
 			if(dtype1==1){
-				for(int i=0; i<Condbin; i++)
-					for(int j=0; j<GCbin; j++)
+				for(int32_t i=0; i<Condbin; i++)
+					for(int32_t j=0; j<GCbin; j++)
 						GCObs(i,j)=exp(GCObs(i,j));
 			}
 			if(dtype2==1){
-				for(int i=0; i<Condbin; i++)
-					for(int j=0; j<GCbin; j++)
+				for(int32_t i=0; i<Condbin; i++)
+					for(int32_t j=0; j<GCbin; j++)
 						GCExp(i,j)=exp(GCExp(i,j));
 			}
 			// assertion for normalized
-			for(int i=0; i<Condbin; i++){
+			for(int32_t i=0; i<Condbin; i++){
 				double sumObs=0, sumExp=0;
-				for(int j=0; j<GCbin; j++){
+				for(int32_t j=0; j<GCbin; j++){
 					sumObs+=GCObs(i,j);
 					sumExp+=GCExp(i,j);
 				}
@@ -154,8 +154,8 @@ public:
 		}
 		double minRatio = 1.0/maxRatio;
 		if(dtype1==1){
-			for(int i=0; i<Condbin; i++)
-				for(int j=0; j<GCbin; j++){
+			for(int32_t i=0; i<Condbin; i++)
+				for(int32_t j=0; j<GCbin; j++){
 					GCBiasRatio(i,j)=exp(GCObs(i,j)-GCExp(i,j));
 					if(GCBiasRatio(i,j)<minRatio)
 						GCBiasRatio(i,j)=minRatio;
@@ -164,8 +164,8 @@ public:
 				}
 		}
 		else{
-			for(int i=0; i<Condbin; i++)
-				for(int j=0; j<GCbin; j++){
+			for(int32_t i=0; i<Condbin; i++)
+				for(int32_t j=0; j<GCbin; j++){
 					GCBiasRatio(i,j)=GCObs(i,j)/GCExp(i,j);
 					if(GCBiasRatio(i,j)<minRatio)
 						GCBiasRatio(i,j)=minRatio;
@@ -209,20 +209,20 @@ public:
 		vector< vector<double> > exp5models, vector< vector<double> > exp3models):
 		numModels(numModels), lenBounds(lenBounds), obs5models(obs5models), obs3models(obs3models), exp5models(exp5models), exp3models(exp3models) 
 		{
-			assert((int)obs5models.size()==numModels);
-			assert((int)obs3models.size()==numModels);
-			assert((int)exp5models.size()==numModels);
-			assert((int)exp3models.size()==numModels);
+			assert((int32_t)obs5models.size()==numModels);
+			assert((int32_t)obs3models.size()==numModels);
+			assert((int32_t)exp5models.size()==numModels);
+			assert((int32_t)exp3models.size()==numModels);
 			ProcessSplines();
 		};
 	void ProcessSplines(){
-		for(int i=0; i<numModels; i++){
+		for(int32_t i=0; i<numModels; i++){
 			vector<double> splineMass(obs5models[i].size()+2);
 			vector<double> splineBins(obs5models[i].size()+2);
 			// observed 5 model
 			splineBins[0]=0;
 			splineMass[0]=obs5models[i][0];
-			for(int j=0; j<obs5models[i].size(); j++){
+			for(int32_t j=0; j<obs5models[i].size(); j++){
 				splineBins[j+1]=positionBins[j]-0.01;
 				splineMass[j+1]=obs5models[i][j]/(1+obs5models[i][0]+obs5models[i].back());
 			}
@@ -234,7 +234,7 @@ public:
 			// observed 3 model
 			splineBins[0]=0;
 			splineMass[0]=obs3models[i][0];
-			for(int j=0; j<obs3models[i].size(); j++){
+			for(int32_t j=0; j<obs3models[i].size(); j++){
 				splineBins[j+1]=positionBins[j]-0.01;
 				splineMass[j+1]=obs3models[i][j]/(1+obs3models[i][0]+obs3models[i].back());
 			}
@@ -246,7 +246,7 @@ public:
 			// expected 5 model
 			splineBins[0]=0;
 			splineMass[0]=exp5models[i][0];
-			for(int j=0; j<exp5models[i].size(); j++){
+			for(int32_t j=0; j<exp5models[i].size(); j++){
 				splineBins[j+1]=positionBins[j]-0.01;
 				splineMass[j+1]=exp5models[i][j]/(1+exp5models[i][0]+exp5models[i].back());
 			}
@@ -258,7 +258,7 @@ public:
 			// expected 3 model
 			splineBins[0]=0;
 			splineMass[0]=exp3models[i][0];
-			for(int j=0; j<exp3models[i].size(); j++){
+			for(int32_t j=0; j<exp3models[i].size(); j++){
 				splineBins[j+1]=positionBins[j]-0.01;
 				splineMass[j+1]=exp3models[i][j]/(1+exp3models[i][0]+exp3models[i].back());
 			}
@@ -269,22 +269,22 @@ public:
 			exp3Splines.push_back(s_exp3);
 		}
 	};
-	int lenClass(uint32_t len) const{
+	int32_t lenClass(uint32_t len) const{
 		vector<uint32_t>::const_iterator itbegin=lenBounds.begin();
 		vector<uint32_t>::const_iterator itend=lenBounds.end();
 		vector<uint32_t>::const_iterator ub=upper_bound(itbegin, itend, len);
-		return min((int)lenBounds.size()-1, (int)distance(itbegin, ub));
+		return min((int32_t)lenBounds.size()-1, (int32_t)distance(itbegin, ub));
 	};
 };
 
-void GetFLDbound(const vector<double>& FLD, int& fldLow, int& fldHigh){
+void GetFLDbound(const vector<double>& FLD, int32_t& fldLow, int32_t& fldHigh){
 	double quantileCutoffLow = 0.005;
 	double FragCount=0;
-	for(int i=0; i<FLD.size(); i++)
+	for(int32_t i=0; i<FLD.size(); i++)
 		FragCount+=FLD[i];
 	bool lb=false, ub=false;
 	double fldcummulative=0;
-	for(int i=0; i<FLD.size(); i++){
+	for(int32_t i=0; i<FLD.size(); i++){
 		fldcummulative+=FLD[i];
 		if(!lb && fldcummulative/FragCount > quantileCutoffLow){
 			fldLow=i;
@@ -300,35 +300,35 @@ void GetFLDbound(const vector<double>& FLD, int& fldLow, int& fldHigh){
 	cout<<"estimated fragment length lb = "<<fldLow<<"\t ub = "<<fldHigh<<endl;
 };
 
-vector<double> BiasCorrectTrans(string seq, const GCBiasModel_t& gcbias, const SeqBiasModel_t& seqbias, const PosBiasModel_t& posbias, const vector<double>& FLD, int fldLow, int fldHigh){
+vector<double> BiasCorrectTrans(string seq, const GCBiasModel_t& gcbias, const SeqBiasModel_t& seqbias, const PosBiasModel_t& posbias, const vector<double>& FLD, int32_t fldLow, int32_t fldHigh){
 	vector<double> Correction(seq.size(), 0);
 
 	// process GC condition
-	vector<int> GCCondFW(seq.size(), 0);
-	vector<int> GCCondRC(seq.size(), 0);
-	vector<int> GCWindowFW(seq.size(), 0);
-	vector<int> GCWindowRC(seq.size(), 0);
-	for(int i=0; i<seq.size(); i++){
-		int gcFWcount=0, gcRCcount=0;
-		for(int j=i-gcbias.contextLeft; j<i+gcbias.contextRight+1; j++){
+	vector<int32_t> GCCondFW(seq.size(), 0);
+	vector<int32_t> GCCondRC(seq.size(), 0);
+	vector<int32_t> GCWindowFW(seq.size(), 0);
+	vector<int32_t> GCWindowRC(seq.size(), 0);
+	for(int32_t i=0; i<seq.size(); i++){
+		int32_t gcFWcount=0, gcRCcount=0;
+		for(int32_t j=i-gcbias.contextLeft; j<i+gcbias.contextRight+1; j++){
 			if(j>=0 && j<seq.size())
 				if(seq[j]=='G' || seq[j]=='g' || seq[j]=='C' || seq[j]=='c')
 					gcFWcount++;
 		}
 		GCCondFW[i]=gcFWcount;
-		GCWindowFW[i]=(min(i+gcbias.contextRight+1, (int)seq.size())-max(0, i-gcbias.contextLeft));
-		for(int j=i+gcbias.contextLeft; j>i-gcbias.contextRight-1; j--){
+		GCWindowFW[i]=(min(i+gcbias.contextRight+1, (int32_t)seq.size())-max(0, i-gcbias.contextLeft));
+		for(int32_t j=i+gcbias.contextLeft; j>i-gcbias.contextRight-1; j--){
 			if(j>=0 && j<seq.size())
 				if(seq[j]=='G' || seq[j]=='g' || seq[j]=='C' || seq[j]=='c')
 					gcRCcount++;
 		}
 		GCCondRC[i]=gcRCcount;
-		GCWindowRC[i]=(min((int)seq.size(), i+gcbias.contextLeft+1)-max(0, i-gcbias.contextRight));
+		GCWindowRC[i]=(min((int32_t)seq.size(), i+gcbias.contextLeft+1)-max(0, i-gcbias.contextRight));
 	}
 	// process GC content vector
-	vector<int> GCRawCount(seq.size()+1, 0);
-	int cummulative=0;
-	for(int i=0; i<seq.size(); i++){
+	vector<int32_t> GCRawCount(seq.size()+1, 0);
+	int32_t cummulative=0;
+	for(int32_t i=0; i<seq.size(); i++){
 		if(seq[i]=='G' || seq[i]=='g' || seq[i]=='C' || seq[i]=='c'){
 			cummulative++;
 		}
@@ -341,10 +341,10 @@ vector<double> BiasCorrectTrans(string seq, const GCBiasModel_t& gcbias, const S
 	Mer mer;
 	mer.k(seqbias.contextLeft+seqbias.contextRight+1);
 	mer.from_chars(seq.c_str());
-	for(int i=seqbias.contextLeft; i<seq.size()-seqbias.contextRight; i++){
+	for(int32_t i=seqbias.contextLeft; i<seq.size()-seqbias.contextRight; i++){
 		double obsvalue=0, expvalue=0;
-		for(int j=0; j<seqbias.contextLeft+seqbias.contextRight+1; j++){
-			int idx=mer.get_bits(seqbias.shifts[j], seqbias.widths[j]);
+		for(int32_t j=0; j<seqbias.contextLeft+seqbias.contextRight+1; j++){
+			int32_t idx=mer.get_bits(seqbias.shifts[j], seqbias.widths[j]);
 			obsvalue+=seqbias.Obs5Probs(idx, j);
 			expvalue+=seqbias.Exp5Probs(idx, j);
 		}
@@ -354,10 +354,10 @@ vector<double> BiasCorrectTrans(string seq, const GCBiasModel_t& gcbias, const S
 	// process 3' seqbias positional ratio
 	string rcseq=ReverseComplement(seq.begin(), seq.end());
 	mer.from_chars(rcseq.c_str());
-	for(int i=seqbias.contextLeft; i<rcseq.size()-seqbias.contextRight; i++){
+	for(int32_t i=seqbias.contextLeft; i<rcseq.size()-seqbias.contextRight; i++){
 		double obsvalue=0, expvalue=0;
-		for(int j=0; j<seqbias.contextLeft+seqbias.contextRight+1; j++){
-			int idx=mer.get_bits(seqbias.shifts[j], seqbias.widths[j]);
+		for(int32_t j=0; j<seqbias.contextLeft+seqbias.contextRight+1; j++){
+			int32_t idx=mer.get_bits(seqbias.shifts[j], seqbias.widths[j]);
 			obsvalue+=seqbias.Obs3Probs(idx, j);
 			expvalue+=seqbias.Exp3Probs(idx, j);
 		}
@@ -369,8 +369,8 @@ vector<double> BiasCorrectTrans(string seq, const GCBiasModel_t& gcbias, const S
 	// process 5' and 3' posbias
 	vector<double> Pos5Ratio(seq.size(), 1);
 	vector<double> Pos3Ratio(seq.size(), 1);
-	int li=posbias.lenClass((int)seq.size());
-	for(int i=0; i<seq.size()-(seqbias.contextLeft+seqbias.contextRight+1); i++){
+	int32_t li=posbias.lenClass((int32_t)seq.size());
+	for(int32_t i=0; i<seq.size()-(seqbias.contextLeft+seqbias.contextRight+1); i++){
 		double fracP=1.0*i/seq.size();
 		double obs5=max(0.001, posbias.obs5Splines[li](fracP));
 		double obs3=max(0.001, posbias.obs3Splines[li](fracP));
@@ -383,24 +383,24 @@ vector<double> BiasCorrectTrans(string seq, const GCBiasModel_t& gcbias, const S
 
 	// calculate correction
 	double FragCount=0;
-	int minFLDpossible=(seq.size()<FLD.size())?1:fldLow;
-	int maxFLDpossible=(seq.size()<FLD.size())?seq.size():fldHigh;
-	for(int i=0; i<maxFLDpossible; i++)
+	int32_t minFLDpossible=(seq.size()<FLD.size())?1:fldLow;
+	int32_t maxFLDpossible=(seq.size()<FLD.size())?seq.size():fldHigh;
+	for(int32_t i=0; i<maxFLDpossible; i++)
 		FragCount+=FLD[i];
-	for(int k=minFLDpossible; k<maxFLDpossible; k++){
+	for(int32_t k=minFLDpossible; k<maxFLDpossible; k++){
 		double flMassTotal=0;
-		for(int i=0; i<seq.size()-k-1; i++){
+		for(int32_t i=0; i<seq.size()-k-1; i++){
 			// seqBias
 			double seq5factor=Seq5Ratio[i];
 			double seq3factor=Seq3Ratio[i+k-1];
 			// gcBias
 			double gcfactor;
 			double gccondition=1.0*(GCCondFW[i]+GCCondRC[i+k-1])/(GCWindowFW[i]+GCWindowRC[i+k-1]);
-			int32_t gccondbin=(int)(gccondition*gcbias.Condbin);
+			int32_t gccondbin=(int32_t)(gccondition*gcbias.Condbin);
 			if(gccondbin==gcbias.Condbin)
 				gccondbin--;
 			double gcfraction=1.0*(GCRawCount[i+k]-GCRawCount[i])/k;
-			int32_t gcbin=(int)(gcbias.GCbin*lrint(gcfraction*100)/100.0);
+			int32_t gcbin=(int32_t)(gcbias.GCbin*lrint(gcfraction*100)/100.0);
 			if(gcbin==gcbias.GCbin)
 				gcbin--;
 			gcfactor=gcbias.GCBiasRatio(gccondbin, gcbin);
@@ -420,35 +420,35 @@ vector<double> BiasCorrectTrans(string seq, const GCBiasModel_t& gcbias, const S
 	return Correction;
 };
 
-vector<double> BiasCorrectTrans_wopos(string seq, const GCBiasModel_t& gcbias, const SeqBiasModel_t& seqbias, const vector<double>& FLD, int fldLow, int fldHigh){
+vector<double> BiasCorrectTrans_wopos(string seq, const GCBiasModel_t& gcbias, const SeqBiasModel_t& seqbias, const vector<double>& FLD, int32_t fldLow, int32_t fldHigh){
 	vector<double> Correction(seq.size(), 0);
 
 	// process GC condition
-	vector<int> GCCondFW(seq.size(), 0);
-	vector<int> GCCondRC(seq.size(), 0);
-	vector<int> GCWindowFW(seq.size(), 0);
-	vector<int> GCWindowRC(seq.size(), 0);
-	for(int i=0; i<seq.size(); i++){
-		int gcFWcount=0, gcRCcount=0;
-		for(int j=i-gcbias.contextLeft; j<i+gcbias.contextRight+1; j++){
+	vector<int32_t> GCCondFW(seq.size(), 0);
+	vector<int32_t> GCCondRC(seq.size(), 0);
+	vector<int32_t> GCWindowFW(seq.size(), 0);
+	vector<int32_t> GCWindowRC(seq.size(), 0);
+	for(int32_t i=0; i<seq.size(); i++){
+		int32_t gcFWcount=0, gcRCcount=0;
+		for(int32_t j=i-gcbias.contextLeft; j<i+gcbias.contextRight+1; j++){
 			if(j>=0 && j<seq.size())
 				if(seq[j]=='G' || seq[j]=='g' || seq[j]=='C' || seq[j]=='c')
 					gcFWcount++;
 		}
 		GCCondFW[i]=gcFWcount;
-		GCWindowFW[i]=(min(i+gcbias.contextRight+1, (int)seq.size())-max(0, i-gcbias.contextLeft));
-		for(int j=i+gcbias.contextLeft; j>i-gcbias.contextRight-1; j--){
+		GCWindowFW[i]=(min(i+gcbias.contextRight+1, (int32_t)seq.size())-max(0, i-gcbias.contextLeft));
+		for(int32_t j=i+gcbias.contextLeft; j>i-gcbias.contextRight-1; j--){
 			if(j>=0 && j<seq.size())
 				if(seq[j]=='G' || seq[j]=='g' || seq[j]=='C' || seq[j]=='c')
 					gcRCcount++;
 		}
 		GCCondRC[i]=gcRCcount;
-		GCWindowRC[i]=(min((int)seq.size(), i+gcbias.contextLeft+1)-max(0, i-gcbias.contextRight));
+		GCWindowRC[i]=(min((int32_t)seq.size(), i+gcbias.contextLeft+1)-max(0, i-gcbias.contextRight));
 	}
 	// process GC content vector
-	vector<int> GCRawCount(seq.size()+1, 0);
-	int cummulative=0;
-	for(int i=0; i<seq.size(); i++){
+	vector<int32_t> GCRawCount(seq.size()+1, 0);
+	int32_t cummulative=0;
+	for(int32_t i=0; i<seq.size(); i++){
 		if(seq[i]=='G' || seq[i]=='g' || seq[i]=='C' || seq[i]=='c'){
 			cummulative++;
 		}
@@ -461,10 +461,10 @@ vector<double> BiasCorrectTrans_wopos(string seq, const GCBiasModel_t& gcbias, c
 	Mer mer;
 	mer.k(seqbias.contextLeft+seqbias.contextRight+1);
 	mer.from_chars(seq.c_str());
-	for(int i=seqbias.contextLeft; i<seq.size()-seqbias.contextRight; i++){
+	for(int32_t i=seqbias.contextLeft; i<seq.size()-seqbias.contextRight; i++){
 		double obsvalue=0, expvalue=0;
-		for(int j=0; j<seqbias.contextLeft+seqbias.contextRight+1; j++){
-			int idx=mer.get_bits(seqbias.shifts[j], seqbias.widths[j]);
+		for(int32_t j=0; j<seqbias.contextLeft+seqbias.contextRight+1; j++){
+			int32_t idx=mer.get_bits(seqbias.shifts[j], seqbias.widths[j]);
 			obsvalue+=seqbias.Obs5Probs(idx, j);
 			expvalue+=seqbias.Exp5Probs(idx, j);
 		}
@@ -474,10 +474,10 @@ vector<double> BiasCorrectTrans_wopos(string seq, const GCBiasModel_t& gcbias, c
 	// process 3' seqbias positional ratio
 	string rcseq=ReverseComplement(seq.begin(), seq.end());
 	mer.from_chars(rcseq.c_str());
-	for(int i=seqbias.contextLeft; i<rcseq.size()-seqbias.contextRight; i++){
+	for(int32_t i=seqbias.contextLeft; i<rcseq.size()-seqbias.contextRight; i++){
 		double obsvalue=0, expvalue=0;
-		for(int j=0; j<seqbias.contextLeft+seqbias.contextRight+1; j++){
-			int idx=mer.get_bits(seqbias.shifts[j], seqbias.widths[j]);
+		for(int32_t j=0; j<seqbias.contextLeft+seqbias.contextRight+1; j++){
+			int32_t idx=mer.get_bits(seqbias.shifts[j], seqbias.widths[j]);
 			obsvalue+=seqbias.Obs3Probs(idx, j);
 			expvalue+=seqbias.Exp3Probs(idx, j);
 		}
@@ -488,24 +488,24 @@ vector<double> BiasCorrectTrans_wopos(string seq, const GCBiasModel_t& gcbias, c
 
 	// calculate correction
 	double FragCount=0;
-	int minFLDpossible=(seq.size()<FLD.size())?1:fldLow;
-	int maxFLDpossible=(seq.size()<FLD.size())?seq.size():fldHigh;
-	for(int i=0; i<maxFLDpossible; i++)
+	int32_t minFLDpossible=(seq.size()<FLD.size())?1:fldLow;
+	int32_t maxFLDpossible=(seq.size()<FLD.size())?seq.size():fldHigh;
+	for(int32_t i=0; i<maxFLDpossible; i++)
 		FragCount+=FLD[i];
-	for(int k=minFLDpossible; k<maxFLDpossible; k++){
+	for(int32_t k=minFLDpossible; k<maxFLDpossible; k++){
 		double flMassTotal=0;
-		for(int i=0; i<seq.size()-k-1; i++){
+		for(int32_t i=0; i<seq.size()-k-1; i++){
 			// seqBias
 			double seq5factor=Seq5Ratio[i];
 			double seq3factor=Seq3Ratio[i+k-1];
 			// gcBias
 			double gcfactor;
 			double gccondition=1.0*(GCCondFW[i]+GCCondRC[i+k-1])/(GCWindowFW[i]+GCWindowRC[i+k-1]);
-			int32_t gccondbin=(int)(gccondition*gcbias.Condbin);
+			int32_t gccondbin=(int32_t)(gccondition*gcbias.Condbin);
 			if(gccondbin==gcbias.Condbin)
 				gccondbin--;
 			double gcfraction=1.0*(GCRawCount[i+k]-GCRawCount[i])/k;
-			int32_t gcbin=(int)(gcbias.GCbin*lrint(gcfraction*100)/100.0);
+			int32_t gcbin=(int32_t)(gcbias.GCbin*lrint(gcfraction*100)/100.0);
 			if(gcbin==gcbias.GCbin)
 				gcbin--;
 			gcfactor=gcbias.GCBiasRatio(gccondbin, gcbin);
@@ -542,7 +542,7 @@ void ReadSalmonCov(string filename, map<string, double>& SalmonCov){
 	SalmonCov.clear();
 	ifstream input(filename);
 	string line;
-	int linecount=0;
+	int32_t linecount=0;
 	while(getline(input, line)){
 		linecount++;
 		if(linecount==1)
@@ -556,12 +556,12 @@ void ReadSalmonCov(string filename, map<string, double>& SalmonCov){
 };
 
 void CorrectNWrite(string filename, vector<string>& TransNames, vector<string>& TransSequences, map<string, double>& SalmonCov, GCBiasModel_t& gcbias, 
-	SeqBiasModel_t& seqbias, PosBiasModel_t& posbias, vector<double>& FLD, int fldLow, int fldHigh, double threshold=1){
+	SeqBiasModel_t& seqbias, PosBiasModel_t& posbias, vector<double>& FLD, int32_t fldLow, int32_t fldHigh, double threshold=1){
 
 	boost::iostreams::filtering_ostream fp1;
 	fp1.push(boost::iostreams::file_sink(filename, std::ios_base::out | std::ios_base::binary));
 	ofstream fp2(filename+"names");
-	for(int i=0; i<TransNames.size(); i++){
+	for(int32_t i=0; i<TransNames.size(); i++){
 		map<string, double>::iterator it=SalmonCov.find(TransNames[i]);
 		if(it!=SalmonCov.end() && it->second>threshold){
 			vector<double> Correction=BiasCorrectTrans(TransSequences[i], gcbias, seqbias, posbias, FLD, fldLow, fldHigh);
@@ -574,28 +574,28 @@ void CorrectNWrite(string filename, vector<string>& TransNames, vector<string>& 
 	fp2.close();
 };
 
-void CountStartPos(string startposfile, map< string,vector<double> >& StartCount, int binsize){
+void CountStartPos(string startposfile, map< string,vector<double> >& StartCount, int32_t binsize){
 	StartCount.clear();
 	ifstream input(startposfile, ios::binary);
-	int numtrans;
-	input.read((char*)(&numtrans), sizeof(int));
+	int32_t numtrans;
+	input.read((char*)(&numtrans), sizeof(int32_t));
 	cout<<numtrans<<endl;
-	for(int i=0; i<numtrans; i++){
-		int namelen, vectorlen;
-		input.read((char*)(&namelen), sizeof(int));
-		input.read((char*)(&vectorlen), sizeof(int));
+	for(int32_t i=0; i<numtrans; i++){
+		int32_t namelen, vectorlen;
+		input.read((char*)(&namelen), sizeof(int32_t));
+		input.read((char*)(&vectorlen), sizeof(int32_t));
 
 		char* buf=new char[namelen]();
-		vector<int> poses(vectorlen, 0);
+		vector<int32_t> poses(vectorlen, 0);
 		vector<double> counts(vectorlen, 0);
 		input.read(buf, namelen*sizeof(char));
-		input.read((char*)poses.data(), vectorlen*sizeof(int));
+		input.read((char*)poses.data(), vectorlen*sizeof(int32_t));
 		input.read((char*)counts.data(), vectorlen*sizeof(double));
 		string name(buf, buf+namelen);
 
-		vector<double> tmp((int)poses.back()/binsize+1, 0);
-		for(int j=0; j<poses.size(); j++){
-			int idx=poses[j]/binsize;
+		vector<double> tmp((int32_t)poses.back()/binsize+1, 0);
+		for(int32_t j=0; j<poses.size(); j++){
+			int32_t idx=poses[j]/binsize;
 			tmp[idx]+=counts[j];
 		}
 		StartCount[name]=tmp;
@@ -603,7 +603,7 @@ void CountStartPos(string startposfile, map< string,vector<double> >& StartCount
 	input.close();
 };
 
-void WriteDeviation(string posfile, string singleposfile, string outfile, map< string,vector<double> >& Corrections, int binsize=50, int escapeedgebins=5){
+void WriteDeviation(string posfile, string singleposfile, string outfile, map< string,vector<double> >& Corrections, int32_t binsize=50, int32_t escapeedgebins=5){
 	map< string,vector<double> > SingleCount;
 	CountStartPos(singleposfile, SingleCount, binsize);
 
@@ -624,21 +624,21 @@ void WriteDeviation(string posfile, string singleposfile, string outfile, map< s
 		double totalreads=0;
 		double effectivelen=0;
 		double cov=0;
-		for(int i=0; i<itall->second.size(); i++)
+		for(int32_t i=0; i<itall->second.size(); i++)
 			totalreads+=itall->second[i];
-		for(int i=0; i<it->second.size(); i++)
+		for(int32_t i=0; i<it->second.size(); i++)
 			effectivelen+=it->second[i];
 		cov=totalreads/effectivelen;
 
 		// calculate corrected length for 50bp bin
-		vector<double> BinCorrectedLen((int)ceil(1.0*it->second.size()/binsize)-2*escapeedgebins);
-		for(int i=0; i<it->second.size(); i++)
-			if(i>=escapeedgebins*binsize && i<binsize*(int)ceil(1.0*it->second.size()/binsize)-escapeedgebins*binsize){
-				int idx=i/binsize-escapeedgebins;
+		vector<double> BinCorrectedLen((int32_t)ceil(1.0*it->second.size()/binsize)-2*escapeedgebins);
+		for(int32_t i=0; i<it->second.size(); i++)
+			if(i>=escapeedgebins*binsize && i<binsize*(int32_t)ceil(1.0*it->second.size()/binsize)-escapeedgebins*binsize){
+				int32_t idx=i/binsize-escapeedgebins;
 				BinCorrectedLen[idx]+=it->second[i];
 			}
 		// write output
-		for(int i=0; i<BinCorrectedLen.size(); i++){
+		for(int32_t i=0; i<BinCorrectedLen.size(); i++){
 			output<<it->first<<"\t"<<(escapeedgebins*binsize+i*binsize)<<"\t"<<((escapeedgebins+i+1)*binsize)<<"\t"<<cov<<"\t";
 			if(itsingle!=SingleCount.end() && itsingle->second.size()>i+escapeedgebins)
 				output<<BinCorrectedLen[i]<<"\t"<<(itall->second[i+escapeedgebins])<<"\t"<<(itsingle->second[i+escapeedgebins])<<endl;
@@ -651,14 +651,14 @@ void WriteDeviation(string posfile, string singleposfile, string outfile, map< s
 
 void WriteRawCorrection(string outfile, map< string,vector<double> >& Corrections){
 	ofstream fpout(outfile, ios::out | ios::binary);
-	int numtrans=Corrections.size();
-	fpout.write(reinterpret_cast<char*>(&numtrans), sizeof(int));
+	int32_t numtrans=Corrections.size();
+	fpout.write(reinterpret_cast<char*>(&numtrans), sizeof(int32_t));
 	for(map< string,vector<double> >::iterator it=Corrections.begin(); it!=Corrections.end(); it++){
-		int namelen=it->first.size();
-		int seqlen=it->second.size();
+		int32_t namelen=it->first.size();
+		int32_t seqlen=it->second.size();
 		string name=it->first;
-		fpout.write(reinterpret_cast<char*>(&namelen), sizeof(int));
-		fpout.write(reinterpret_cast<char*>(&seqlen), sizeof(int));
+		fpout.write(reinterpret_cast<char*>(&namelen), sizeof(int32_t));
+		fpout.write(reinterpret_cast<char*>(&seqlen), sizeof(int32_t));
 		fpout.write(name.c_str(), namelen*sizeof(char));
 		fpout.write(reinterpret_cast<char*>(it->second.data()), seqlen*sizeof(double));
 	}
@@ -667,13 +667,13 @@ void WriteRawCorrection(string outfile, map< string,vector<double> >& Correction
 
 void TestReading(string infile, map< string,vector<double> >& Corrections){
 	ifstream fpin(infile, ios::binary);
-	int numtrans;
-	fpin.read((char*)&numtrans, sizeof(int));
-	for(int i=0; i<numtrans; i++){
-		int namelen;
-		int seqlen;
-		fpin.read((char*)&namelen, sizeof(int));
-		fpin.read((char*)&seqlen, sizeof(int));
+	int32_t numtrans;
+	fpin.read((char*)&numtrans, sizeof(int32_t));
+	for(int32_t i=0; i<numtrans; i++){
+		int32_t namelen;
+		int32_t seqlen;
+		fpin.read((char*)&namelen, sizeof(int32_t));
+		fpin.read((char*)&seqlen, sizeof(int32_t));
 
 		char* buf=new char[namelen];
 		string name;
@@ -685,16 +685,16 @@ void TestReading(string infile, map< string,vector<double> >& Corrections){
 		vector<double> truedata=Corrections[name];
 		double sum=0;
 		assert(truedata.size()==mydata.size());
-		for(int i=0; i<seqlen; i++)
+		for(int32_t i=0; i<seqlen; i++)
 			sum+=fabs(mydata[i]-truedata[i]);
 		cout<<sum<<endl;
 	}
 };
 
-int main(int argc, char* argv[]){
+int32_t main(int32_t argc, char* argv[]){
 	if(argc==1){
-		printf("readsalmonbias correction <BiasPath> <TransFasta> <SalmonQuant> <OutputFile> (fldLow fldHigh)\n");
-		printf("readsalmonbias deviation <BiasPath> <TransFasta> <SalmonQuant> <PosFile> <SinglePosFile> <OutputFile> (fldLow fldHigh)\n");
+		printf("readsalmonbias correction <BiasPath> <TransFasta> <SalmonQuant> <OutputFile> (number_threads)\n");
+		// printf("readsalmonbias deviation <BiasPath> <TransFasta> <SalmonQuant> <PosFile> <SinglePosFile> <OutputFile> (number_threads)\n");
 	}
 	else{
 		string SeqBiasPath(argv[2]);
@@ -703,14 +703,20 @@ int main(int argc, char* argv[]){
 		string PosFile;
 		string SinglePosFile;
 		string OutputFile;
-		int fldLow, fldHigh;
+		int32_t NumThreads = 8;
+		int32_t fldLow, fldHigh;
 
-		if(string(argv[1])=="correction")
+		if(string(argv[1])=="correction") {
 			OutputFile=string(argv[5]);
+			if (argc > 6)
+				NumThreads = atoi(argv[6]);
+		}
 		else{
 			PosFile=string(argv[5]);
 			SinglePosFile=string(argv[6]);
 			OutputFile=string(argv[7]);
+			if (argc > 8)
+				NumThreads = atoi(argv[8]);
 		}
 
 		// reading sequence bias
@@ -720,18 +726,18 @@ int main(int argc, char* argv[]){
 		{
 			boost::iostreams::filtering_istream fpin;
 			fpin.push(boost::iostreams::gzip_decompressor());
-			fpin.push(boost::iostreams::file_source(SeqBiasPath+"/exp5_seq", std::ios_base::in | std::ios_base::binary));
+			fpin.push(boost::iostreams::file_source(SeqBiasPath+"/exp5_seq.gz", std::ios_base::in | std::ios_base::binary));
 			ReadSeqBias(fpin, contextLength, seqbias.contextLeft, seqbias.contextRight, seqbias.orders, seqbias.shifts, seqbias.widths, seqbias.Exp5Probs);
 		}
 		{
 			boost::iostreams::filtering_istream fpin;
 			fpin.push(boost::iostreams::gzip_decompressor());
-			fpin.push(boost::iostreams::file_source(SeqBiasPath+"/obs5_seq", std::ios_base::in | std::ios_base::binary));
+			fpin.push(boost::iostreams::file_source(SeqBiasPath+"/obs5_seq.gz", std::ios_base::in | std::ios_base::binary));
 			ReadSeqBias(fpin, contextLength, contextLeft, contextRight, orders, shifts, widths, seqbias.Obs5Probs);
 			assert(contextLeft==seqbias.contextLeft);
 			assert(contextRight=seqbias.contextRight);
 			assert(orders.size()==seqbias.orders.size());
-			for(int i=0; i<orders.size(); i++){
+			for(int32_t i=0; i<orders.size(); i++){
 				assert(orders[i]==seqbias.orders[i]);
 				assert(shifts[i]==seqbias.shifts[i]);
 				assert(widths[i]==seqbias.widths[i]);
@@ -740,12 +746,12 @@ int main(int argc, char* argv[]){
 		{
 			boost::iostreams::filtering_istream fpin;
 			fpin.push(boost::iostreams::gzip_decompressor());
-			fpin.push(boost::iostreams::file_source(SeqBiasPath+"/exp3_seq", std::ios_base::in | std::ios_base::binary));
+			fpin.push(boost::iostreams::file_source(SeqBiasPath+"/exp3_seq.gz", std::ios_base::in | std::ios_base::binary));
 			ReadSeqBias(fpin, contextLength, contextLeft, contextRight, orders, shifts, widths, seqbias.Exp3Probs);
 			assert(contextLeft==seqbias.contextLeft);
 			assert(contextRight=seqbias.contextRight);
 			assert(orders.size()==seqbias.orders.size());
-			for(int i=0; i<orders.size(); i++){
+			for(int32_t i=0; i<orders.size(); i++){
 				assert(orders[i]==seqbias.orders[i]);
 				assert(shifts[i]==seqbias.shifts[i]);
 				assert(widths[i]==seqbias.widths[i]);
@@ -754,12 +760,12 @@ int main(int argc, char* argv[]){
 		{
 			boost::iostreams::filtering_istream fpin;
 			fpin.push(boost::iostreams::gzip_decompressor());
-			fpin.push(boost::iostreams::file_source(SeqBiasPath+"/obs3_seq", std::ios_base::in | std::ios_base::binary));
+			fpin.push(boost::iostreams::file_source(SeqBiasPath+"/obs3_seq.gz", std::ios_base::in | std::ios_base::binary));
 			ReadSeqBias(fpin, contextLength, contextLeft, contextRight, orders, shifts, widths, seqbias.Obs3Probs);
 			assert(contextLeft==seqbias.contextLeft);
 			assert(contextRight=seqbias.contextRight);
 			assert(orders.size()==seqbias.orders.size());
-			for(int i=0; i<orders.size(); i++){
+			for(int32_t i=0; i<orders.size(); i++){
 				assert(orders[i]==seqbias.orders[i]);
 				assert(shifts[i]==seqbias.shifts[i]);
 				assert(widths[i]==seqbias.widths[i]);
@@ -772,13 +778,13 @@ int main(int argc, char* argv[]){
 		{
 			boost::iostreams::filtering_istream fpin;
 			fpin.push(boost::iostreams::gzip_decompressor());
-			fpin.push(boost::iostreams::file_source(SeqBiasPath+"/exp_gc", std::ios_base::in | std::ios_base::binary));	
+			fpin.push(boost::iostreams::file_source(SeqBiasPath+"/exp_gc.gz", std::ios_base::in | std::ios_base::binary));	
 			ReadGCBias(fpin, dtypeExp, GCCountsExp);
 		}
 		{
 			boost::iostreams::filtering_istream fpin;
 			fpin.push(boost::iostreams::gzip_decompressor());
-			fpin.push(boost::iostreams::file_source(SeqBiasPath+"/obs_gc", std::ios_base::in | std::ios_base::binary));
+			fpin.push(boost::iostreams::file_source(SeqBiasPath+"/obs_gc.gz", std::ios_base::in | std::ios_base::binary));
 			ReadGCBias(fpin, dtypeObs, GCCountsObs);
 		}
 		GCBiasModel_t gcbias(dtypeObs, GCCountsObs, dtypeExp, GCCountsExp, 1000.0, 3, 1);
@@ -790,25 +796,25 @@ int main(int argc, char* argv[]){
 		{
 			boost::iostreams::filtering_istream fpin;
 			fpin.push(boost::iostreams::gzip_decompressor());
-			fpin.push(boost::iostreams::file_source(SeqBiasPath+"/obs5_pos", std::ios_base::in | std::ios_base::binary));	
+			fpin.push(boost::iostreams::file_source(SeqBiasPath+"/obs5_pos.gz", std::ios_base::in | std::ios_base::binary));	
 			ReadPosBias(fpin, numModels, lenBounds, obs5models);
 		}
 		{
 			boost::iostreams::filtering_istream fpin;
 			fpin.push(boost::iostreams::gzip_decompressor());
-			fpin.push(boost::iostreams::file_source(SeqBiasPath+"/exp5_pos", std::ios_base::in | std::ios_base::binary));	
+			fpin.push(boost::iostreams::file_source(SeqBiasPath+"/exp5_pos.gz", std::ios_base::in | std::ios_base::binary));	
 			ReadPosBias(fpin, numModels, lenBounds, exp5models);
 		}
 		{
 			boost::iostreams::filtering_istream fpin;
 			fpin.push(boost::iostreams::gzip_decompressor());
-			fpin.push(boost::iostreams::file_source(SeqBiasPath+"/obs3_pos", std::ios_base::in | std::ios_base::binary));	
+			fpin.push(boost::iostreams::file_source(SeqBiasPath+"/obs3_pos.gz", std::ios_base::in | std::ios_base::binary));	
 			ReadPosBias(fpin, numModels, lenBounds, obs3models);
 		}
 		{
 			boost::iostreams::filtering_istream fpin;
 			fpin.push(boost::iostreams::gzip_decompressor());
-			fpin.push(boost::iostreams::file_source(SeqBiasPath+"/exp3_pos", std::ios_base::in | std::ios_base::binary));	
+			fpin.push(boost::iostreams::file_source(SeqBiasPath+"/exp3_pos.gz", std::ios_base::in | std::ios_base::binary));	
 			ReadPosBias(fpin, numModels, lenBounds, exp3models);
 		}
 		cout<<"lenBounds"<<endl;
@@ -829,21 +835,12 @@ int main(int argc, char* argv[]){
 		{
 			boost::iostreams::filtering_istream fpin;
 			fpin.push(boost::iostreams::gzip_decompressor());
-			fpin.push(boost::iostreams::file_source(SeqBiasPath+"/fld", std::ios_base::in | std::ios_base::binary));
+			fpin.push(boost::iostreams::file_source(SeqBiasPath+"/fld.gz", std::ios_base::in | std::ios_base::binary));
 			ReadFLD(fpin, RawFLD);
 			FLDKDE(RawFLD, FLD);
 		}
 
-		if(string(argv[1])=="deviation" && argc==10){
-			fldLow=atoi(argv[8]);
-			fldHigh=atoi(argv[9]);
-		}
-		else if(string(argv[1])=="correction" && argc==8){
-			fldLow=atoi(argv[6]);
-			fldHigh=atoi(argv[7]);
-		}
-		else
-			GetFLDbound(FLD, fldLow, fldHigh);
+		GetFLDbound(FLD, fldLow, fldHigh);
 
 
 		vector<string> TransSequences;
@@ -856,9 +853,9 @@ int main(int argc, char* argv[]){
 
 		map<string, vector<double> > Corrections;
 		mutex Corrections_mutex;
-		omp_set_num_threads(8);
+		omp_set_num_threads(NumThreads);
 		#pragma omp parallel for
-		for(int i=0; i<TransSequences.size(); i++){
+		for(int32_t i=0; i<TransSequences.size(); i++){
 			if(TransSequences[i].size()<seqbias.contextLeft+seqbias.contextRight+1){
 				cout<<TransNames[i]<<"\t"<<(TransSequences[i].size())<<endl;
 				continue;
