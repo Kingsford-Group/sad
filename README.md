@@ -86,6 +86,7 @@ bin/readsalmonbias correction <salmon aux folder path> <transcriptome.fa> <salmo
 ```
 
 The output is a binary file that contains:
+
 	- the number of transcripts (int32_t)
 	- for each transcript:
 		- the length of the transcript ID (int32_t)
@@ -100,6 +101,7 @@ bin/transcovdist 0 <salmon quant.sf> <salmon eq_classes.txt> <salmon mapping.bam
 ```
 
 The output is a binary file in the following structure:
+
 	- the number of transcripts (int32_t)
 	- for each transcript:
 		- the length of the transcript ID (int32_t)
