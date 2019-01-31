@@ -86,12 +86,12 @@ bin/readsalmonbias correction <salmon aux folder path> <transcriptome.fa> <salmo
 ```
 
 The output is a binary file that contains:
-	+ the number of transcripts (int32_t)
-	+ for each transcript:
-		+ the length of the transcript ID (int32_t)
-		+ transcript sequence length (int32_t)
-		+ transcript ID (char * length of ID)
-		+ expected coverage distribution (double * length of sequence)
+	- the number of transcripts (int32_t)
+	- for each transcript:
+		- the length of the transcript ID (int32_t)
+		- transcript sequence length (int32_t)
+		- transcript ID (char * length of ID)
+		- expected coverage distribution (double * length of sequence)
 
 ### Retrieve the observed coverage distribution
 bin/transcovdist is the executable of retrieving the observed distribution for each transcript using the mapping-to-transcriptome BAM file. With --writeMappings option, Salmon will output a SAM file of the read mapping, and can be converted to BAM using samtools.
@@ -100,13 +100,13 @@ bin/transcovdist 0 <salmon quant.sf> <salmon eq_classes.txt> <salmon mapping.bam
 ```
 
 The output is a binary file in the following structure:
-	+ the number of transcripts (int32_t)
-	+ for each transcript:
-		+ the length of the transcript ID (int32_t)
-		+ the number of effective positions (int32_t). Effetive positions are the positions with non-zero fragment starts besides the last position of transcript.
-		+ transcript ID (char * length of ID)
-		+ effective positions (int32_t * number of effective positions)
-		+ weighted count of fragment starts at each effective position (double * number of effective positions)
+	- the number of transcripts (int32_t)
+	- for each transcript:
+		- the length of the transcript ID (int32_t)
+		- the number of effective positions (int32_t). Effetive positions are the positions with non-zero fragment starts besides the last position of transcript.
+		- transcript ID (char * length of ID)
+		- effective positions (int32_t * number of effective positions)
+		- weighted count of fragment starts at each effective position (double * number of effective positions)
 
 ### Detect and categorize anomalies
 bin/SAD is the main method for anomaly detection. It can be executed with the following command:
