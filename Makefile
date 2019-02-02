@@ -13,12 +13,15 @@ GSL_LIB_DIR = external/gsl-2.5/Installation/lib
 GUROBI_LIB_DIR = /opt/local/stow/gurobi800/linux64/lib
 HTSLIB_LIB_DIR = external/htslib-1.9/Installation/lib
 
+SHELL = /bin/bash
+VER = $(shell ls ${GUROBI_LIB_DIR}/libgurobi* | grep -E "[0-9]+.so" | awk 'BEGIN{FS="[/.]"}{print substr($$(NF-1),4)}')
+
 CC = gcc
 CXX = g++
 CXXFLAGS = -std=c++11 $(INCLUDES) -g
 INCLUDES = -I $(BOOST_INCLUDE_DIR) -I $(EIGEN_INCLUDE_DIR) -I $(GSL_INCLUDE_DIR) -I $(GUROBI_INCLUDE_DIR) -I $(JELLYFISH_INCLUDE_DIR) -I $(HTSLIB_INCLUDE_DIR) -I $(SPLINE_INCLUDE_DIR)
 LDADD = $(GSL_LIB_DIR)/libgslcblas.a $(GSL_LIB_DIR)/libgsl.a  $(HTSLIB_LIB_DIR)/libhts.a -L $(GUROBI_LIB_DIR)
-LDLIBS = -lz -lm -fopenmp -lboost_iostreams -lgurobi_c++ -lgurobi80 -llzma -lbz2 -lcurl -lcrypto -lpthread
+LDLIBS = -lz -lm -fopenmp -lboost_iostreams -lgurobi_c++ -l$(VER) -llzma -lbz2 -lcurl -lcrypto -lpthread
 RPATH = $(GUROBI_LIB_DIR)
 
 SRCS_SAD = src/main.cpp src/DistTest.cpp src/Transcript.cpp src/LPReassign.cpp src/IO.cpp

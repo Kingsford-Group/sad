@@ -302,8 +302,6 @@ void DistTest_t::CalDeletionScore(double covthresh, double numthresh)
 	DeletionRegion_neg.assign(ExpectedBinNorm.size(), make_pair(-1,-1));
 	// calculate exp - obs
 	for (int32_t i = 0; i < ExpectedBinNorm.size(); i++){
-		if (i == 161)
-			cout << "watch here\n";
 		if (TransCov[i] < covthresh || (TransCov[i]*TransLength[i]) < numthresh)
 			continue;
 		Eigen::VectorXd Diff = ExpectedBinNorm[i] - ObservedBinNorm[i];
@@ -956,8 +954,6 @@ void DistTest_t::PValue_overall_empirical(const vector<int32_t>& AdjustmentList,
 	omp_set_num_threads(Num_Threads);
 	#pragma omp parallel for
 	for (int32_t i = 0; i < AdjustmentList.size(); i++){
-		if (AdjustmentList[i] == 5474)
-			cout << "watch here\n";
 		pair<double,double> pvs = SinglePvalue_overall_empirical(AdjustmentList[i], 100, r);
 		PValuesPos[i] = pvs.first;
 		PValuesNeg[i] = pvs.second;
@@ -979,8 +975,6 @@ void DistTest_t::PValue_overall_empirical(const vector<int32_t>& AdjustmentList,
 	omp_set_num_threads(Num_Threads);
 	#pragma omp parallel for
 	for (int32_t i = 0; i < AdjustmentList.size(); i++){
-		if (AdjustmentList[i] == 5474)
-			cout << "watch here\n";
 		if (min(PValuesPos[i], PValuesNeg[i]) > 0.01 || min(PValuesPos[i], PValuesNeg[i]) < -0.5)
 			continue;
 		// calculate approximate p value

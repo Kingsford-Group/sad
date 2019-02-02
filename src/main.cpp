@@ -108,16 +108,16 @@ int32_t main (int32_t argc, char* argv[])
 		sort(AdjustmentList.begin(), AdjustmentList.end());
 		AdjustmentList.resize( distance(AdjustmentList.begin(), unique(AdjustmentList.begin(),AdjustmentList.end())) );
 
-		{
-			// calculate the overall p value of the regional-significant transcripts
-			cout <<"Calculating the transcript-level p value corresponding to the regional anomalies\n";
-			dt.Num_Threads = 8;
-			vector<double> PValuesPos;
-			vector<double> PValuesNeg;
-			vector<bool> Choices;
-			dt.PValue_overall_empirical(AdjustmentList, PValuesPos, PValuesNeg, Choices);
-			WriteOverallPvalue(OutputPrefix+"_initial_pvalue_overall.tsv", AdjustmentList, Transcripts, dt.TransCov, dt, PValuesPos, PValuesNeg, Choices);
-		}
+		// {
+		// 	// calculate the overall p value of the regional-significant transcripts
+		// 	cout <<"Calculating the transcript-level p value corresponding to the regional anomalies\n";
+		// 	dt.Num_Threads = 8;
+		// 	vector<double> PValuesPos;
+		// 	vector<double> PValuesNeg;
+		// 	vector<bool> Choices;
+		// 	dt.PValue_overall_empirical(AdjustmentList, PValuesPos, PValuesNeg, Choices);
+		// 	WriteOverallPvalue(OutputPrefix+"_initial_pvalue_overall.tsv", AdjustmentList, Transcripts, dt.TransCov, dt, PValuesPos, PValuesNeg, Choices);
+		// }
 
 		// initial LP
 		LPReassign_t LP(TransIndex, TransGeneMap, GeneTransMap, Transcripts, Expected, Observed);

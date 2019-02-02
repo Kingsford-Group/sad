@@ -420,8 +420,6 @@ pair<string,int32_t> GetGenomicPosition(const vector<Transcript_t>& Transcripts,
 			}
 		}
 	}
-	if(genomepos==-1)
-		cout<<"watch here\n";
 	assert(genomepos!=-1);
 	return make_pair(t.Chr, genomepos);
 };

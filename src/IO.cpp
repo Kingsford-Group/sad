@@ -296,7 +296,7 @@ void ReadNewAssignment_Distribution_old(string numreadsfile, string distfile, co
 		for (int32_t j = 0; j < mydata.size(); j++)
 			sum += mydata[j];
 		if (fabs(sum - NewQuant[i]) > 0.1)
-			cout << "watch here\t"<< sum <<"\t"<< NewQuant[i] << endl;
+			cout << "Error: inconsistent read count.\t"<< sum <<"\t"<< NewQuant[i] << endl;
 		assert(fabs(sum - NewQuant[i]) < 0.1 || fabs(sum - NewQuant[i])/sum < 1e-3);
 	}
 	input2.close();
@@ -313,7 +313,7 @@ void WriteRegionalPvalue(string outputfile, const vector<Transcript_t>& Transcri
 		const PRegion_t& rawp = RawPRegion[i];
 		const PRegion_t& adjp = AdjustedPRegion[i];
 		if (rawp.TID != adjp.TID)
-			cout <<"watch here\n";
+			cout <<"Error: inconsistent transcript ID.\n";
 		assert(rawp.TID == adjp.TID);
 		assert(rawp.BinStart == adjp.BinStart && rawp.BinEnd == adjp.BinEnd);
 		output << (Transcripts[rawp.TID].TransID) <<"\t"<< (rawp.BinStart) <<"\t"<< (rawp.BinEnd) <<"\t";
