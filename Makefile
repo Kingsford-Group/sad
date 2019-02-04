@@ -27,8 +27,9 @@ RPATH = $(GUROBI_LIB_DIR)
 SRCS_SAD = src/main.cpp src/DistTest.cpp src/Transcript.cpp src/LPReassign.cpp src/IO.cpp
 SRCS_BIAS = src/ReadSalmonBias.cpp
 SRCS_COV = src/TransCovDist.cpp
+SRCS_CATE = src/CategorizeSimulation.cpp src/Transcript.cpp
 
-all: bin/SAD bin/readsalmonbias bin/transcovdist
+all: bin/SAD bin/readsalmonbias bin/transcovdist bin/categorizesimulation
 
 bin/SAD: $(subst .cpp,.o,$(SRCS_SAD))
 	mkdir -p bin
@@ -39,6 +40,10 @@ bin/readsalmonbias: $(subst .cpp,.o,$(SRCS_BIAS))
 	$(CXX) -o $@ $^ $(LDADD) $(LDLIBS) -Wl,-rpath,$(RPATH)
 
 bin/transcovdist: $(subst .cpp,.o,$(SRCS_COV))
+	mkdir -p bin
+	$(CXX) -o $@ $^ $(LDADD) $(LDLIBS) -Wl,-rpath,$(RPATH)
+
+bin/categorizesimulation: $(subst .cpp,.o,$(SRCS_CATE))
 	mkdir -p bin
 	$(CXX) -o $@ $^ $(LDADD) $(LDLIBS) -Wl,-rpath,$(RPATH)
 
