@@ -1,6 +1,7 @@
 #!/bin/python
 
 import sys
+import re
 
 
 def GetFeature(line, key):
@@ -11,10 +12,11 @@ def GetFeature(line, key):
 
 def ReadTransIDs(infasta):
 	transids = []
-	fp = open(ingtf, 'r')
+	fp = open(infasta, 'r')
 	for line in fp:
 		if line[0] == '>':
-			transids.append(line.strip().split("\t"))
+			id = re.split(" |\|", line)[0][1:]
+			transids.append(id)
 	fp.close()
 	transids = set(transids)
 	return transids
@@ -45,4 +47,4 @@ if __name__=="__main__":
 		outgtf = sys.argv[3]
 
 		transids = ReadTransIDs(infasta)
-		ExtractFasta(transids, ingtf, outgtf)
+		ExtractGTF(transids, ingtf, outgtf)

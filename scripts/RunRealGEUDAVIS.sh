@@ -1,23 +1,27 @@
 #!/bin/bash
 
-MetaFile="/home/congm1/savanna/savannacong33/RawData/GEUVADIS/Metadata.txt"
+codedir=$0
+codedir=${codedir%/*}
 
-Type=("PC" "Full")
-GTFfiles=("/home/congm1/savanna/savannacong33/NCBI/gencode.v26.annotation.pc.gtf" "/home/congm1/savanna/savannacong33/NCBI/gencode.v26.annotation.gtf")
-SalmonIndex=("/mnt/disk33/user/congm1/NCBI/gencode.v26.pcERCC" "/mnt/disk33/user/congm1/NCBI/gencode.v26.full")
-TransFastafiles=("/home/congm1/savanna/savannacong33/NCBI/gencode.v26.pc.transcripts.fa" "/home/congm1/savanna/savannacong33/NCBI/gencode.v26.full.transcripts.fa")
-ReadFolder="/home/congm1/savanna/savannacong33/RawData/GEUVADIS"
+prepdir=$1
 
-OutDirectory="/home/congm1/savanna/savannacong33/SADrealdata/GEUVADIS"
-SADFolder="test_correctapprox8"
+MetaFile="${codedir}/../data/GEUVADIS/Metadata.txt"
+
+Type=("Full")
+GTFfiles=("${prepdir}/gencode.v26.annotation.gtf")
+TransFastas=("${prepdir}/gencode.v26.transcripts.fa")
+SalmonIndex=("${prepdir}/gencode.v26.full")
+ReadFolder="${codedir}/../data/GEUVADIS"
+OutDirectory="${prepdir}/GEUVADIS"
+SADFolder="sad"
 
 count=0
 
-i=1
+i=0
 #for ((i=0; i<${#Type[@]}; i++)); do
 	t=${Type[${i}]}
 	gtffile=${GTFfiles[${i}]}
-	transfasta=${TransFastafiles[${i}]}
+	transfasta=${TransFastas[${i}]}
 	salmonindex=${SalmonIndex[${i}]}
 	while read -r line; do
 
@@ -47,47 +51,23 @@ i=1
 			gunzip ${OutDirectory}/salmon_${t}_${ID}/aux_info/*gz
 		fi
 
-		# expected distribution with bias correction
-		if [[ ! -e ${OutDirectory}/salmon_${t}_${ID}/correction.dat ]]; then
-			echo -e "\texpected distribution calculation"
-			/home/congm1/savanna/savannacong33/Code/SAD/bin/readsalmonbias correction ${OutDirectory}/salmon_${t}_${ID}/aux_info/ ${transfasta} ${OutDirectory}/salmon_${t}_${ID}/quant.sf ${OutDirectory}/salmon_${t}_${ID}/correction.dat
-		fi
-
-		# observed distribution
-		if [[ ! -e ${OutDirectory}/salmon_${t}_${ID}/startpos.dat ]]; then
-			echo -e "\tobserved distribution calculation"
-			/home/congm1/savanna/savannacong33/Code/SAD/bin/transcovdist2 0 ${OutDirectory}/salmon_${t}_${ID}/quant.sf ${OutDirectory}/salmon_${t}_${ID}/aux_info/eq_classes.txt ${OutDirectory}/salmon_${t}_${ID}/mapping.bam ${OutDirectory}/salmon_${t}_${ID}/startpos.dat
-		fi
-
-		if [[ ! -e ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/test_pvalue_overall ]]; then
-			echo -e "\tRunning SAD"
-			mkdir -p ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/
-			/home/congm1/savanna/savannacong33/Code/SAD/bin/SAD ${gtffile} ${OutDirectory}/salmon_${t}_${ID}/quant.sf ${OutDirectory}/salmon_${t}_${ID}/correction.dat ${OutDirectory}/salmon_${t}_${ID}/startpos.dat ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/test
+		# run SADpipe
+		if [[ ! -e ${prepdir}/salmon/${t}_${ID}_${n}/${SADFolder}/sad_pvalue_overall ]]; then
+			python3 ${codedir}/SADpipe.py -t ${transfasta} -a ${gtffile} -s ${OutDirectory}/salmon_${t}_${ID}/ -o ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/sad
 		fi
 
 		# post-process SAD
-		if [[ -e ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/test_pvalue_overall ]] && [[ ! -e ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/test_pvalue_overall_sorted_uniqgene ]]; then
+		if [[ -e ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/sad_pvalue_overall ]] && [[ ! -e ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/sad_pvalue_overall_sorted_uniqgene ]]; then
 			echo -e "\tpost-process SAD p values"
-			python3 /home/congm1/savanna/savannacong33/Code/SAD/src/AdjustPValue.py 1 ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/test_pvalue_overall ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/test_pvalue_overall_sorted
-			python3 /home/congm1/savanna/savannacong33/Code/SAD/src/Pred_Trans2Gene.py ${gtffile} ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/test_pvalue_overall_sorted ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/test_pvalue_overall_sorted_uniqgene
+			python3 ${codedir}/SortPValue.py 1 ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/sad_pvalue_overall ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/sad_pvalue_overall_sorted
+			python3 ${codedir}/Pred_Trans2Gene.py ${gtffile} ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/sad_pvalue_overall_sorted ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/sad_pvalue_overall_sorted_uniqgene
 		fi
-
-		## adding DeletionRegion information
-		#if [[ ! -e ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/test_pvalue_overall_sorted_uniqgene_append ]]; then
-		#	/home/congm1/savanna/savannacong33/Code/SAD/bin/postSAD ${gtffile} ${OutDirectory}/salmon_${t}_${ID}/quant.sf ${OutDirectory}/salmon_${t}_${ID}/correction.dat ${OutDirectory}/salmon_${t}_${ID}/startpos.dat ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/test
-		#fi
-
-		## Analysis: length rank
-		#if [[ ! -e ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/analysis_lengthrank.txt ]]; then
-		#	echo -e "\tAnalysis: length rank"
-		#	python3 /mnt/disk33/user/congm1/Code/SAD/src/SADAnalysis_singlesample.py lengthrank ${gtffile} ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/test_pvalue_overall_sorted_uniqgene_append ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/analysis_lengthrank.txt
-		#fi
 
 		# STAR alignment for transcriptome assembly
 		if [[ ! -e ${OutDirectory}/star_${t}_${ID}/Aligned.sortedByCoord.out.bam ]]; then
 			mkdir -p ${OutDirectory}/star_${t}_${ID}/
 			echo -e "\tSTAR aligning"
-			STAR --runThreadN 4 --genomeDir /home/congm1/savanna/savannacong33/NCBI/StarIndex_full/ --readFilesIn ${read1} ${read2} --readFilesCommand gunzip -c --outFileNamePrefix ${OutDirectory}/star_${t}_${ID}/ --outSAMtype BAM SortedByCoordinate --outSAMstrandField intronMotif --chimSegmentMin 15
+			STAR --runThreadN 4 --genomeDir ${prepdir}/StarIndex/ --readFilesIn ${read1} ${read2} --readFilesCommand gunzip -c --outFileNamePrefix ${OutDirectory}/star_${t}_${ID}/ --outSAMtype BAM SortedByCoordinate --outSAMstrandField intronMotif --chimSegmentMin 15 --sjdbGTFfile ${gtffile}
 		fi
 
 		# transcriptome assembly: Scallop
@@ -105,17 +85,15 @@ i=1
 		fi
 
 		# analysis: compare SAD and scallop
-		if [[ -e ${OutDirectory}/star_${t}_${ID}/scallopgenes.gtf ]] && [[ ! -e ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/test_pvalue_overall_scallopcomp2 ]]; then
+		if [[ -e ${OutDirectory}/star_${t}_${ID}/scallopgenes.gtf ]] && [[ ! -e ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/sad_pvalue_overall_scallopcomp2 ]]; then
 			echo -e "\tcomparing SAD and Scallop prediction"
-			#python3 src/FindSADpredinAssembly.py 0 ${gtffile} ${OutDirectory}/star_${t}_${ID}/scallopgenes.gtf ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/test_pvalue_overall_sorted_uniqgene_append ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/test_pvalue_overall_scallopcomp
-			python3 src/FindSADpredinAssembly.py 1 ${gtffile} ${OutDirectory}/star_${t}_${ID}/scallopgenes.gtf ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/test_pvalue_overall_sorted_uniqgene ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/test_pvalue_overall_scallopcomp2
+			python3 ${codedir}/FindSADpredinAssembly.py 1 ${gtffile} ${OutDirectory}/star_${t}_${ID}/scallopgenes.gtf ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/sad_pvalue_overall_sorted_uniqgene ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/sad_pvalue_overall_scallopcomp
 		fi
 
 		# analysis: compare SAD and stringtie
-		if [[ -e ${OutDirectory}/star_${t}_${ID}/stringtiegenes.gtf ]] && [[ ! -e ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/test_pvalue_overall_stringtiecomp2 ]]; then
+		if [[ -e ${OutDirectory}/star_${t}_${ID}/stringtiegenes.gtf ]] && [[ ! -e ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/sad_pvalue_overall_stringtiecomp2 ]]; then
 			echo -e "\tcomparing SAD and StringTie prediction"
-			#python3 src/FindSADpredinAssembly.py 0 ${gtffile} ${OutDirectory}/star_${t}_${ID}/stringtiegenes.gtf ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/test_pvalue_overall_sorted_uniqgene_append ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/test_pvalue_overall_stringtiecomp
-			python3 src/FindSADpredinAssembly.py 1 ${gtffile} ${OutDirectory}/star_${t}_${ID}/stringtiegenes.gtf ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/test_pvalue_overall_sorted_uniqgene ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/test_pvalue_overall_stringtiecomp2
+			python3 ${codedir}/FindSADpredinAssembly.py 1 ${gtffile} ${OutDirectory}/star_${t}_${ID}/stringtiegenes.gtf ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/sad_pvalue_overall_sorted_uniqgene ${OutDirectory}/salmon_${t}_${ID}/${SADFolder}/sad_pvalue_overall_stringtiecomp
 		fi
 
 	done < ${MetaFile}

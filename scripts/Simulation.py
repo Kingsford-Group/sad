@@ -2,6 +2,7 @@
 
 import sys
 import numpy as np
+import re
 
 # The functions below are simulating deleted transcripts and fusion transcripts
 def ReadGenome(fafile):
@@ -15,8 +16,7 @@ def ReadGenome(fafile):
 			if len(tmpseq)!=0:
 				genome[tmpname]=tmpseq
 			tmpseq=''
-			strs=line.split()
-			tmpname=strs[0][1:]
+			tmpname=re.split(" |\|", line)[0][1:]
 		else:
 			tmpseq+=line
 		line=fp.readline().strip()
