@@ -1,3 +1,9 @@
+/*
+Part of Salmon Anomaly Detection
+(c) 2019 by  Cong Ma, Carl Kingsford, and Carnegie Mellon University.
+See LICENSE for licensing.
+*/
+
 #include "IO.hpp"
 #include "Transcript.hpp"
 #include "DistTest.hpp"

@@ -1,3 +1,9 @@
+/*
+Part of Salmon Anomaly Detection
+(c) 2019 by  Cong Ma, Carl Kingsford, and Carnegie Mellon University.
+See LICENSE for licensing.
+*/
+
 #include "Transcript.hpp"
 
 // small function to extract tag information in GTF file

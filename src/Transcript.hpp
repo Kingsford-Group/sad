@@ -1,3 +1,9 @@
+/*
+Part of Salmon Anomaly Detection
+(c) 2019 by  Cong Ma, Carl Kingsford, and Carnegie Mellon University.
+See LICENSE for licensing.
+*/
+
 #ifndef __Transcript_H__
 #define __Transcript_H__
 
