@@ -24,17 +24,21 @@ def ParseArgument(arguments):
 		if arguments[i] == "-t":
 			assert( i+1 < len(arguments) )
 			TranscriptFasta = arguments[i+1]
+			print("TranscriptFasta = " + TranscriptFasta)
 		elif arguments[i] == "-a":
 			assert( i+1 < len(arguments) )
 			GTFfile = arguments[i+1]
+			print("GTFfile = " + GTFfile)
 		elif arguments[i] == "-s":
 			assert( i+1 < len(arguments) )
 			SalmonDir = arguments[i+1]
+			print("SalmonDir = " + SalmonDir)
 		elif arguments[i] == "-o":
 			assert( i+1 < len(arguments) )
 			OutPrefix = arguments[i+1]
+			print("OutPrefix = " + OutPrefix)
 		else:
-			print("Error: Invalid argument {}".format(argument[i]))
+			print("Error: Invalid argument {}".format(arguments[i]))
 			sys.exit()
 		i += 2
 	return TranscriptFasta, GTFfile, SalmonDir, OutPrefix
@@ -57,7 +61,7 @@ if __name__=="__main__":
 			aux_dir = SalmonDir + "/aux_info"
 			quant_file = SalmonDir + "/quant.sf"
 			output_file = SalmonDir + "/correction.dat"
-			p = subprocess.Popen("{}/bin/readsalmonbias correction {} {} {} {}".format(codedir, aux_dir, TranscriptFasta, quant_file, output_file), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			p = subprocess.Popen("{}/../bin/readsalmonbias correction {} {} {} {}".format(codedir, aux_dir, TranscriptFasta, quant_file, output_file), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 			out, err = p.communicate()
 			if err != b'':
 				print(err)
@@ -75,18 +79,20 @@ if __name__=="__main__":
 		# processing observed distribution
 		assert( Path(SalmonDir + "/mapping.bam").exists() )
 		if not Path(SalmonDir + "/startpos.dat").exists():
+			print("PROCESSING OBSERVED COVERAGE DISTRIBUTION...")
 			quant_file = SalmonDir + "/quant.sf"
 			eq_file = SalmonDir + "/aux_info/eq_classes.txt"
 			bam_file = SalmonDir + "/mapping.bam"
 			output_file = SalmonDir + "/startpos.dat"
-			p = subprocess.Popen("{}/bin/transcovdist 0 {} {} {} {}".format(codedir, quant_file, eq_file, bam_file, output_file), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			p = subprocess.Popen("{}/../bin/transcovdist 0 {} {} {} {}".format(codedir, quant_file, eq_file, bam_file, output_file), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 			out, err = p.communicate()
 			if err != b'':
 				print(err)
 				sys.exit()
 
 		# running SAD
-		if not Path(OutPrefix + "_pvalue_overall").exists():
+		if not Path(OutPrefix + "_unadjustable_pvalue.tsv").exists():
+			print("DETECTING ANOMALIES USING SAD...")
 			# creating output directory
 			p = subprocess.Popen("mkdir -p {}".format("/".join(OutPrefix.split("/")[:-1])), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 			out, err = p.communicate()
@@ -97,7 +103,7 @@ if __name__=="__main__":
 			quant_file = SalmonDir + "/quant.sf"
 			correction_file = SalmonDir + "/correction.dat"
 			startpos_file = SalmonDir + "/startpos.dat"
-			p = subprocess.Popen("{}/bin/SAD {} {} {} {} {}".format(codedir, GTFfile, quant_file, correction_file, startpos_file, OutPrefix), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			p = subprocess.Popen("{}/../bin/SAD {} {} {} {} {}".format(codedir, GTFfile, quant_file, correction_file, startpos_file, OutPrefix), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 			out, err = p.communicate()
 			if err != b'':
 				print(err)

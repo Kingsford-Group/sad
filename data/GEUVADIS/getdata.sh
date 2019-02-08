@@ -7,12 +7,12 @@ while read -r line; do
 	read -ra x <<< "${line}"
 	c=${#x[@]}
 
-	if [[ ! -e ${x[$((c-1))]}/${x[$((c-1))]}_1.fastq.gz ]]; then
+	if [[ ! -e ${folder}/${x[$((c-1))]}/${x[$((c-1))]}_1.fastq.gz ]]; then
 		mkdir -p ${folder}/${x[$((c-1))]}
 		wget -P ${folder}/${x[$((c-1))]} ftp://ftp.sra.ebi.ac.uk/vol1/fastq/${x[$((c-1))]:0:6}/${x[$((c-1))]}/${x[$((c-1))]}_1.fastq.gz
 	fi
 
-	if [[ ! -e ${x[$((c-1))]}/${x[$((c-1))]}_2.fastq.gz ]]; then
+	if [[ ! -e ${folder}/${x[$((c-1))]}/${x[$((c-1))]}_2.fastq.gz ]]; then
 		mkdir -p ${folder}/${x[$((c-1))]}
 		wget -P ${folder}/${x[$((c-1))]} ftp://ftp.sra.ebi.ac.uk/vol1/fastq/${x[$((c-1))]:0:6}/${x[$((c-1))]}/${x[$((c-1))]}_2.fastq.gz
 	fi

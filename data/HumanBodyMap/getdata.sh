@@ -12,11 +12,11 @@ for ID in $(cut -d$'\t' -f10 ${folder}/HumanBodyMap_SraRunTable.txt); do
 		continue
 	fi
 
-	if [[ ! -e ${ID}_1.fastq.gz ]]; then
+	if [[ ! -e ${folder}/${ID}_1.fastq.gz ]]; then
 		wget -P ${folder} ftp://ftp.sra.ebi.ac.uk/vol1/fastq/${ID:0:6}/${ID}/${ID}_1.fastq.gz
 	fi
 
-	if [[ ! -e ${ID}_2.fastq.gz ]]; then
+	if [[ ! -e ${folder}/${ID}_2.fastq.gz ]]; then
 		wget -P ${folder} ftp://ftp.sra.ebi.ac.uk/vol1/fastq/${ID:0:6}/${ID}/${ID}_2.fastq.gz
 	fi
 done
