@@ -4,8 +4,6 @@ import sys
 import struct
 import numpy as np
 import pandas as pd
-from plotnine import *
-from scripts.TranscriptClass import *
 from matplotlib import pyplot as plt
 from pathlib import Path
 
@@ -345,8 +343,8 @@ def PlotDist_ribbon_v2(ax, exp, obs, cov, tname="", binsize=50, legend_bottom=Fa
 		xaxis[i]=binsize*i
 	plt.rcParams['font.family'] = 'serif'
 	plt.rcParams['mathtext.fontset'] = 'dejavuserif'
-	ax.scatter(xaxis, P, color="#00BFC4", alpha=0.7, label="expected")
-	ax.scatter(xaxis, Q, color="#F8766D", alpha=0.7, label="observed")
+	ax.scatter(xaxis, P, marker='^', color="#00BFC4", alpha=0.7, label="expected")
+	ax.scatter(xaxis, Q, marker='o', color="#F8766D", alpha=0.7, label="observed")
 	ax.fill_between( xaxis, np.maximum(P-Std, 0), np.minimum(P+Std, 1), color="#00BFC4", alpha=0.1, label="std of Gaussian error" )
 	ax.grid(alpha=0.1)
 	if not (legend_bottom is None):

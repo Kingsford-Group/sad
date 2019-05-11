@@ -246,9 +246,11 @@ vector<double> LPReassign_t::Quantify_singlecase(Eigen::MatrixXd& exp, Eigen::Ve
 	for (int32_t i = 0; i < exp.cols(); i++)
 		alpha[i] = X[i].get(GRB_DoubleAttr_X);
 	// for 0 alphas, assign to a very small positive value, in order to assign position-wise number of reads
-	for (int32_t i = 0; i < exp.cols(); i++)
-		if (alpha[i] == 0)
+	for (int32_t i = 0; i < exp.cols(); i++) {
+		assert( alpha[i] >= -1e-4);
+		if (alpha[i] <= 0)
 			alpha[i] = 1e-8;
+	}
 	return alpha;
 };
 //****************** end test *********************
@@ -425,6 +427,9 @@ vector<double> LPReassign_t::ReassignReads(vector< vector<double> >& newAssignme
 		for(int32_t i = 0; i < obsfull.size(); i++) {
 			Eigen::VectorXd tmpalpha = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(alpha.data(), alpha.size());
 			Eigen::ArrayXd assign_theo = expfull.row(i).array().transpose() * tmpalpha.array();
+			assert( obsfull[i] >= 0 );
+			for (int32_t j = 0; j < assign_theo.size(); j++)
+				assert( assign_theo[j] >= 0);
 			if (assign_theo.sum() != 0)
 				tmp_assign_full.row(i) = obsfull(i) * assign_theo / (assign_theo.sum());
 		}
