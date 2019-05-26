@@ -34,6 +34,32 @@ void ReadSalmonQuant(string quantfile, map<string,double>& SalmonExp, map<string
 	input.close();
 };
 
+
+void ReadRSEMQuant(string quantfile, map<string,double>& RSEMExp, map<string,double>& TPM, 
+	map<string,int32_t>& TransLength)
+{
+	// clear variables
+	RSEMExp.clear();
+	TPM.clear();
+	TransLength.clear();
+	// read file
+	ifstream input(quantfile);
+	string line;
+	int32_t linecount = 0;
+	while (getline(input, line)){
+		linecount++;
+		if (linecount == 1)
+			continue;
+		vector<string> strs;
+		boost::split(strs, line, boost::is_any_of("\t"));
+		RSEMExp[strs[0]] = stod(strs[4]);
+		TPM[strs[0]] = stod(strs[4]) / stoi(strs[2]);
+		TransLength[strs[0]] = stoi(strs[2]);
+	}
+	input.close();
+};
+
+
 void ReadCorrection(string correctionfile, const map<string,int32_t>& TransIndex, const map<string,int32_t>& TransLength, 
 	vector< vector<double> >& Expected)
 {
@@ -86,7 +112,7 @@ void ReadCorrection(string correctionfile, const map<string,int32_t>& TransIndex
 };
 
 void ReadStartpos(string startposfile, const map<string,int32_t>& TransIndex, const map<string,int32_t>& TransLength, 
-	vector< vector<double> >& Observed)
+	vector< vector<double> >& Observed, double min_sum_cutoff)
 {
 	time_t CurrentTime;
 	string CurrentTimeStr;
@@ -133,6 +159,12 @@ void ReadStartpos(string startposfile, const map<string,int32_t>& TransIndex, co
 		if (itidx != TransIndex.cend()){
 			assert(Observed[itidx->second].size() == mydata.size());
 			Observed[itidx->second] = mydata;
+			// set every entry to 0 if the sum of the observed coverage is smaller than min_sum_cutoff
+			double sum = std::accumulate(Observed[itidx->second].begin(), Observed[itidx->second].end(), 0.0);
+			if (sum < min_sum_cutoff) {
+				vector<double> tmp(Observed[itidx->second].size(), 0);
+				Observed[itidx->second] = tmp;
+			}
 		}
 	}
 	input.close();

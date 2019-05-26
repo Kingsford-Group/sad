@@ -96,6 +96,8 @@ public:
 	void UpdateObserved(const vector< vector<double> >& NewObserved);
 	void UpdateObserved(const vector<int32_t>& AdjustmentList, const vector< vector<double> >& NewObserved);
 
+	vector<string> SelectTransWithGaussianError(const vector<string>& trans);
+
 	void CalDeletionScore(double covthresh = 0.01, double numthresh = 20);
 	void CalDeletionScore(const vector<int32_t>& AdjustmentList, double covthresh = 0.01, double numthresh = 20);
 	static double CalDeletionScore_single(Eigen::VectorXd Dist1, Eigen::VectorXd Dist2, pair<int32_t,int32_t>& region, 

@@ -19,6 +19,7 @@ DistTest_t::DistTest_t(const map<string,int32_t>& _TransIndex, const map<string,
 		map<string,int32_t>::const_iterator itlen = _TransLength.find(it->first);
 		assert(itlen != _TransLength.cend());
 		TransLength[it->second] = itlen->second;
+		assert(itlen->second == Expected[it->second].size());
 	}
 	TransNames.resize(TransIndex.size(), "");
 	for (map<string,int32_t>::const_iterator it = TransIndex.cbegin(); it != TransIndex.cend(); it++)
@@ -52,6 +53,7 @@ DistTest_t::DistTest_t(const map<string,int32_t>& _TransIndex, const map<string,
 	ObservedBinNorm.clear();
 	LenClass.clear();
 	assert(Expected.size() == Observed.size());
+	double tmpmin = 1;
 	for (int32_t i = 0; i < Expected.size(); i++) {
 		// identify len_class
 		assert(Expected[i].size() == Observed[i].size());
@@ -94,10 +96,9 @@ DistTest_t::DistTest_t(const map<string,int32_t>& _TransIndex, const map<string,
 		ObservedBinNorm.push_back(tmpobs_eigen);
 		LenClass.push_back(len_class);
 		TransCov.push_back(sumobs / TransLength[i]);
-		// if (sumexp == 0)
-		// 	TransCov.push_back(0);
-		// else
-		// 	TransCov.push_back(sumobs / sumexp);
+
+		if (sumobs < 1e-6 && sumobs > 0 && sumobs < tmpmin)
+			tmpmin = sumobs;
 	}
 	assert(ExpectedBinNorm.size() == LenClass.size() && ObservedBinNorm.size() == LenClass.size());
 
@@ -166,16 +167,41 @@ void DistTest_t::AdjustExpected(double nstdthresh)
 			double tpm = TransCov[ind];
 			logTPM(j) = std::log(tpm);
 		}
-		double logTPM_mean = logTPM.mean();
-		double logTPM_std = std::sqrt( (logTPM.array()-logTPM.mean()).square().sum() / (logTPM.size()-1) );
-		double logTPM_thresh = logTPM_mean + nstdthresh * logTPM_std;
+		double logTPM_mean = 0;
+		double logTPM_std = 0;
+		double logTPM_thresh = 0;
+		if (logTPM.size() > 0)
+			logTPM_mean = logTPM.mean();
+		if (logTPM.size() > 1)
+			logTPM_std = std::sqrt( (logTPM.array()-logTPM.mean()).square().sum() / (logTPM.size()-1) );
+		logTPM_thresh = logTPM_mean + nstdthresh * logTPM_std;
 		// make a matrix of shifts for high expression transcripts
 		vector<int32_t> passedIndex;
 		for (int32_t j = 0; j < lenTransIndexes[i].size(); j++){
 			if (logTPM(j) > logTPM_thresh)
 				passedIndex.push_back(lenTransIndexes[i][j]);
 		}
-		assert(passedIndex.size() > 10);
+		if (passedIndex.size() <= 10) {
+			if (i > 0)
+				cout << "Warning: not enough transcripts are expressed in length class " << i <<" (" << lenBounds[i-1] <<","<< lenBounds[i] << "). Not inferring the mean and variance of Gaussian error of expected distribution.\n";
+			else
+				cout << "Warning: not enough transcripts are expressed in length class " << i <<" (0" <<","<< lenBounds[i] << "). Not inferring the mean and variance of Gaussian error of expected distribution.\n";
+			// set the observed distribution and coverage to 0
+			for (int32_t j = 0; j < lenTransIndexes[i].size(); j++) {
+				ObservedBinNorm[lenTransIndexes[i][j]] = Eigen::VectorXd::Zero(ObservedBinNorm[lenTransIndexes[i][j]].size());
+				TransCov[lenTransIndexes[i][j]] = 0;
+			}
+			// set Mean of this length class to 0
+			Eigen::VectorXd mean_shift = Eigen::VectorXd::Zero(nBins[i]);
+			Mean.push_back(mean_shift);
+			// set covariance matrix of this length class to 0
+			Eigen::MatrixXd cov_shift = Eigen::MatrixXd::Zero(nBins[i], nBins[i]);
+			Covariance.push_back(cov_shift);
+			// set the cholesky decomposition matrix of this length class to 0
+			Eigen::MatrixXd chol_L = Eigen::MatrixXd::Zero(nBins[i]-1, nBins[i]-1);
+			CholeskyDecom.push_back(chol_L);
+			continue;
+		}
 		assert(ObservedBinNorm[passedIndex[0]].size() == nBins[i]);
 		Eigen::MatrixXd Shifts(passedIndex.size(), nBins[i] - 1);
 		for (int32_t j = 0; j < passedIndex.size(); j++){
@@ -237,6 +263,8 @@ void DistTest_t::UpdateObserved(const vector< vector<double> >& NewObserved)
 	for (int32_t i = 0; i < NewObserved.size(); i++){
 		assert(NewObserved[i].size() == TransLength[i]);
 		int32_t len_class = LenClass[i];
+		if (Covariance[len_class].isZero(1e-18))
+			continue;
 		// binning and calculate sum
 		int32_t length = NewObserved[i].size();
 		double sumobs = 0;
@@ -296,6 +324,20 @@ void DistTest_t::UpdateObserved(const vector<int32_t>& AdjustmentList, const vec
 		ObservedBinNorm[AdjustmentList[i]] = tmpobs_eigen;
 		TransCov[AdjustmentList[i]] = sumobs / TransLength[AdjustmentList[i]];
 	}
+};
+
+
+vector<string> DistTest_t::SelectTransWithGaussianError(const vector<string>& trans)
+{
+	vector<string> trans_with_gaussianerror;
+	for (const string& t : trans) {
+		int32_t ind = TransIndex[t];
+		int32_t len_class = LenClass[ind];
+		// check whether this length class doesn't have enough expressed transcripts and get zero Covariance / CholeskyDecom matrix
+		if ( !Covariance[len_class].isZero(1e-18) )
+			trans_with_gaussianerror.push_back(t);
+	}
+	return trans_with_gaussianerror;
 };
 
 
@@ -499,6 +541,8 @@ vector<PRegion_t> DistTest_t::SinglePvalue_regional_pos(int32_t ind)
 	if (DeletionScore_pos[ind] > 0){
 		int32_t Spacing = DeletionRegion_pos[ind].second - DeletionRegion_pos[ind].first;
 		int32_t len_class = LenClass[ind];
+		// check whether this length class doesn't have enough expressed transcripts and get zero Covariance / CholeskyDecom matrix
+		assert( !Covariance[len_class].isZero(1e-18) );
 		for (int32_t binstart = 0; binstart < ExpectedBinNorm[ind].size(); binstart++) {
 			int32_t binend = binstart + Spacing;
 			if (binend >= ExpectedBinNorm[ind].size())
@@ -560,6 +604,7 @@ vector<PRegion_t> DistTest_t::SinglePvalue_regional_neg(int32_t ind)
 	if (DeletionScore_neg[ind] > 0){
 		int32_t Spacing = DeletionRegion_neg[ind].second - DeletionRegion_neg[ind].first;
 		int32_t len_class = LenClass[ind];
+		assert( !Covariance[len_class].isZero(1e-18) );
 		for (int32_t binstart = 0; binstart < ExpectedBinNorm[ind].size(); binstart++) {
 			int32_t binend = binstart + Spacing;
 			if (binend >= ExpectedBinNorm[ind].size())
@@ -624,6 +669,7 @@ pair<double,double> DistTest_t::SinglePvalue_overall(int32_t ind)
 		pair<int32_t,int32_t> region = DeletionRegion_pos[ind];
 		// theoretical probability
 		int32_t len_class = LenClass[ind];
+		assert( !Covariance[len_class].isZero(1e-18) );
 		double numreads_total = TransCov[ind] * TransLength[ind];
 		bool overbound = false;
 		for (int32_t i = 0; i < nBins[len_class]; i++){
@@ -661,6 +707,7 @@ pair<double,double> DistTest_t::SinglePvalue_overall(int32_t ind)
 		pair<int32_t,int32_t> region = DeletionRegion_neg[ind];
 		// theoretical probability
 		int32_t len_class = LenClass[ind];
+		assert( !Covariance[len_class].isZero(1e-18) );
 		double numreads_total = TransCov[ind] * TransLength[ind];
 		bool overbound = false;
 		for (int32_t i = 0; i < nBins[len_class]; i++){
@@ -707,6 +754,7 @@ pair<double, double> DistTest_t::SinglePvalue_overall_empirical(int32_t ind, int
 	// check threshold
 	if (DeletionScore_pos[ind] < 0 || DeletionScore_neg[ind] < 0)
 		return make_pair(-1, -1);
+	assert( !CholeskyDecom[len_class].isZero(1e-18) );
 	// // tmp: write simulated files
 	// ofstream output1("tmp_choL", ios::out);
 	// ofstream output2("tmp_expected", ios::out);

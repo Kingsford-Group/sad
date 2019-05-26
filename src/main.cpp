@@ -16,17 +16,20 @@ double PvalueThresh=0.1;
 int32_t main (int32_t argc, char* argv[])
 {
 	if (argc==1){
-		printf("SAD <GTFfile> <SalmonQuantFile> <CorrectionFile> <StartposFile> <OutputPrefix>\n");
+		printf("SAD <mode: 0 for Salmon, 1 for RSEM> <GTFfile> <QuantFile> <CorrectionFile> <StartposFile> <OutputPrefix>\n");
 	}
 	else{
-		string GTFfile(argv[1]);
-		string SalmonQuantFile(argv[2]);
-		string CorrectionFile(argv[3]);
-		string StartposFile(argv[4]);
-		string OutputPrefix(argv[5]);
+		string mode(argv[1]);
+		if (mode != "0" && mode != "1")
+			cerr << "Wrong mode." << endl;
+		string GTFfile(argv[2]);
+		string QuantFile(argv[3]);
+		string CorrectionFile(argv[4]);
+		string StartposFile(argv[5]);
+		string OutputPrefix(argv[6]);
 
-		map<string,double> SalmonExpMap;
-		vector<double> SalmonExp;
+		map<string,double> ExpMap;
+		vector<double> Exp;
 		map<string,double> TPM;
 		map<string,int32_t> TransLength;
 		vector<Transcript_t> Transcripts;
@@ -34,13 +37,16 @@ int32_t main (int32_t argc, char* argv[])
 		map<string,string> TransGeneMap;
 		map< string,vector<string> > GeneTransMap;
 
-		ReadSalmonQuant(SalmonQuantFile, SalmonExpMap, TPM, TransLength);
+		if (mode == "0")
+			ReadSalmonQuant(QuantFile, ExpMap, TPM, TransLength);
+		else
+			ReadRSEMQuant(QuantFile, ExpMap, TPM, TransLength);
 		ReadGTF(GTFfile, Transcripts);
-		TrimTranscripts(SalmonExpMap, Transcripts);
+		TrimTranscripts(ExpMap, Transcripts);
 		Map_Gene_Trans(Transcripts, TransIndex, TransGeneMap, GeneTransMap);
-		SalmonExp.assign(TransIndex.size(), 0);
+		Exp.assign(TransIndex.size(), 0);
 		for (map<string,int32_t>::const_iterator it = TransIndex.cbegin(); it != TransIndex.cend(); it++)
-			SalmonExp[it->second] = SalmonExpMap[it->first];
+			Exp[it->second] = ExpMap[it->first];
 
 		vector< vector<double> > Expected;
 		vector< vector<double> > Observed;
@@ -108,7 +114,8 @@ int32_t main (int32_t argc, char* argv[])
 		RelatedGenes.resize( distance(RelatedGenes.begin(), unique(RelatedGenes.begin(),RelatedGenes.end())) );
 		for (const string& g : RelatedGenes) {
 			const vector<string>& trans = GeneTransMap[g];
-			for (const string& t : trans)
+			vector<string> trans_with_gaussianerror = dt.SelectTransWithGaussianError(trans);
+			for (const string& t : trans_with_gaussianerror)
 				AdjustmentList.push_back( TransIndex[t] );
 		}
 		sort(AdjustmentList.begin(), AdjustmentList.end());
@@ -166,7 +173,7 @@ int32_t main (int32_t argc, char* argv[])
 
 			// update adjustment list
 			int32_t oldsize = AdjustmentList.size();
-			AdjustmentList = ReduceAssignmentList(AdjustmentList, GeneTransMap, TransIndex, SalmonExp, LPExp, MovingMat, 
+			AdjustmentList = ReduceAssignmentList(AdjustmentList, GeneTransMap, TransIndex, Exp, LPExp, MovingMat, 
 				AdjPValuesPos_salmon, AdjPValuesNeg_salmon, AdjPValuesPos_lp, AdjPValuesNeg_lp);
 			if (oldsize - AdjustmentList.size() < 100)
 				break;

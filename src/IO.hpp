@@ -14,6 +14,7 @@ See LICENSE for licensing.
 #include <cmath>
 #include <omp.h>
 #include <mutex>
+#include <numeric>
 #include "boost/algorithm/string.hpp"
 #include "Eigen/Dense"
 
@@ -25,9 +26,11 @@ class DistTest_t;
 
 void ReadSalmonQuant(string quantfile, map<string,double>& SalmonExp, map<string,double>& TPM, map<string,int32_t>& TransLength);
 
+void ReadRSEMQuant(string quantfile, map<string,double>& RSEMExp, map<string,double>& TPM, map<string,int32_t>& TransLength);
+
 void ReadCorrection(string correctionfile, const map<string,int32_t>& TransIndex, const map<string,int32_t>& TransLength, vector< vector<double> >& Expected);
 
-void ReadStartpos(string startposfile, const map<string,int32_t>& TransIndex, const map<string,int32_t>& TransLength, vector< vector<double> >& Observed);
+void ReadStartpos(string startposfile, const map<string,int32_t>& TransIndex, const map<string,int32_t>& TransLength, vector< vector<double> >& Observed, double min_sum_cutoff = 1e-8);
 
 void WriteNewAssignment_NumReads(string outputfile, const vector<Transcript_t>& Transcripts, 
 	const vector<int32_t>& AdjustmentList, vector< vector<double> >& newAssignment);

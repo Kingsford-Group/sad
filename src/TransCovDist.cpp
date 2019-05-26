@@ -45,6 +45,7 @@ struct Brdy{
 	};
 };
 
+
 class Transcript_t
 {
 public:
@@ -154,57 +155,6 @@ void ReadSalmonQuant(string quantfile, const map<string,int32_t>& Trans, vector<
 	input.close();
 };
 
-/*void GetEqTrans(string eqclassfile, map<string,int32_t>& Trans, vector<string>& TransNames, map< vector<int32_t>,int32_t >& EqTransID){
-	EqTransID.clear();
-
-	ifstream input(eqclassfile);
-	string line;
-
-	int32_t linecount=0;
-	int32_t numtrans=0;
-	int32_t numeqclass=0;
-	while(getline(input,line)){
-		linecount++;
-		if(linecount==1)
-			numtrans=stoi(line);
-		else if(linecount==2)
-			numeqclass=stoi(line);
-		else if(linecount<=2+numtrans){
-			Trans[line]=linecount-3;
-			TransNames.push_back(line);
-		}
-		else if(linecount>2+numtrans){
-			vector<string> strs;
-			boost::split(strs, line, boost::is_any_of("\t"));
-
-			int32_t numrelatedtid=stoi(strs[0]);
-			vector<int32_t> TIDs(numrelatedtid);
-			for(int32_t i=0; i<numrelatedtid; i++)
-				TIDs[i]=stoi(strs[1+i]);
-			EqTransID[TIDs]=linecount-3-numtrans;
-		}
-	}
-
-	input.close();
-};
-
-void GetSalmonWeightAssign(string ASSIGNfile, map< pair<int32_t,int32_t>,double >& WeightAssign){
-	WeightAssign.clear();
-
-	ifstream input(ASSIGNfile);
-	string line;
-	while(getline(input, line)){
-		vector<string> strs;
-		boost::split(strs, line, boost::is_any_of("\t"));
-		int32_t eqID=stoi(strs[0]);
-		int32_t tid=stoi(strs[1]);
-		double weight=stod(strs[2]);
-		if(weight<1e-7)
-			weight=0;
-		WeightAssign[make_pair(eqID, tid)]=weight;
-	}
-	input.close();
-};*/
 
 void GetEqTrans(string eqclassfile, map<string,int32_t>& Trans, vector<string>& TransNames, map< vector<int32_t>,int32_t >& EqTransID, map< pair<int32_t,int32_t>,double >& Aux){
 	EqTransID.clear();
@@ -430,7 +380,7 @@ pair<string,int32_t> GetGenomicPosition(const vector<Transcript_t>& Transcripts,
 	return make_pair(t.Chr, genomepos);
 };
 
-int32_t ReadBAMStartPos2(string bamfile, const vector<string>& LowQualReadNames, map<string,int32_t>& Trans, map< vector<int32_t>,int32_t >& EqTransID, 
+int32_t ReadBAMStartPos(string bamfile, const vector<string>& LowQualReadNames, map<string,int32_t>& Trans, map< vector<int32_t>,int32_t >& EqTransID, 
 	vector<int32_t>& TransLength, map< pair<int32_t,int32_t>,double >& WeightAssign, ofstream& ss){
 	vector<Brdy> ReadBrdy;
 	ReadBrdy.reserve(65536);
@@ -659,9 +609,7 @@ int32_t ReadBAMSingleMapStartPos2(string bamfile, const vector<string>& LowQualR
 	vector<int32_t>& TransLength, map< pair<int32_t,int32_t>,double >& WeightAssign, ofstream& ss, ofstream& ss_bad){
 
 	vector<Brdy> ReadBrdy;
-	ReadBrdy.reserve(65536);
 	vector<Brdy> BadReadBrdy;
-	BadReadBrdy.reserve(65536);
 
 	samFile * bamreader=sam_open(bamfile.c_str(), "r");
 	bam_hdr_t *header=NULL;
@@ -716,8 +664,6 @@ int32_t ReadBAMSingleMapStartPos2(string bamfile, const vector<string>& LowQualR
 						Brdy tmpstart(readtids[i], fragstart, false, w);
 						assert(!std::isnan(tmpstart.Weight) && !std::isinf(tmpstart.Weight));
 						ReadBrdy.push_back(tmpstart);
-						if(ReadBrdy.capacity()==ReadBrdy.size())
-							ReadBrdy.reserve(ReadBrdy.size()*2);
 					}
 				}
 			}
@@ -738,8 +684,6 @@ int32_t ReadBAMSingleMapStartPos2(string bamfile, const vector<string>& LowQualR
 						Brdy tmpstart(readtids[i], fragstart, false, w);
 						assert(!std::isnan(tmpstart.Weight) && !std::isinf(tmpstart.Weight));
 						BadReadBrdy.push_back(tmpstart);
-						if(BadReadBrdy.capacity()==BadReadBrdy.size())
-							BadReadBrdy.reserve(BadReadBrdy.size()*2);
 					}
 				}
 			}
@@ -1017,7 +961,7 @@ int32_t main(int32_t argc, char* argv[]){
 		GetSalmonWeightAssign(AssignFile, WeightAssign);*/
 
 		if(atoi(argv[1])==0)
-			ReadBAMStartPos2(BamFile, LowQualReadNames, Trans, EqTransID, TransLength, WeightAssign, ss);
+			ReadBAMStartPos(BamFile, LowQualReadNames, Trans, EqTransID, TransLength, WeightAssign, ss);
 		else if(atoi(argv[1])==1){
 			string OutBadFile;
 			size_t suffixpos = OutFile.find_last_of(".");
