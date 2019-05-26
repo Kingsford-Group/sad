@@ -49,6 +49,8 @@ if __name__=="__main__":
 		print("python3 SADpipe.py -t <transcriptome.fa> -a <annotation.gtf> -s <salmon_folder> -o <output_prefix>")
 	else:
 		codedir = "/".join(sys.argv[0].split("/")[:-1])
+		if codedir == "":
+			codedir = "."
 		TranscriptFasta, GTFfile, SalmonDir, OutPrefix = ParseArgument(sys.argv)
 
 		# process bias correction

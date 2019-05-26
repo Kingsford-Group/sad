@@ -33,12 +33,38 @@ fi
 # extract protein-coding only transcript
 python ${folder}/ExtractPCAnnotation.py gencode.v26.pc.transcripts.fa gencode.v26.annotation.gtf gencode.v26.annotation.pc.gtf
 
-if false; then
 # download data
+echo "DOWNLOADING BASE EXPRESSION SAMPLES..."
+${folder}/../data/BaseExpression/getdata.sh
 echo "DOWNLOADING GEUVADIS SAMPLES..."
 ${folder}/../data/GEUVADIS/getdata.sh
 echo "DOWNLOADING HUMAN BODY MAP SAMPLES..."
 ${folder}/../data/HumanBodyMap/getdata.sh
+
+# quantify baseline expression
+if [[ ! -e ${folder}/../data/BaseExpression/ERR188297_salmon_full_quant.sf ]]; then
+	salmon quant -p 4 -l A -i gencode.v26.full -1 ${folder}/../data/BaseExpression/ERR188297_1.fastq.gz -2 ${folder}/../data/BaseExpression/ERR188297_2.fasta.gz --gcBias --seqBias --posBias -o ${folder}/../data/BaseExpression/ERR188297_full
+	mv ${folder}/../data/BaseExpression/ERR188297_full/quant.sf ${folder}/../data/BaseExpression/ERR188297_salmon_full_quant.sf
+fi
+if [[ ! -e ${folder}/../data/BaseExpression/ERR188297_salmon_pc_quant.sf ]]; then
+	salmon quant -p 4 -l A -i gencode.v26.pc -1 ${folder}/../data/BaseExpression/ERR188297_1.fastq.gz -2 ${folder}/../data/BaseExpression/ERR188297_2.fasta.gz --gcBias --seqBias --posBias -o ${folder}/../data/BaseExpression/ERR188297_pc
+	mv ${folder}/../data/BaseExpression/ERR188297_pc/quant.sf ${folder}/../data/BaseExpression/ERR188297_salmon_pc_quant.sf
+fi
+if [[ ! -e ${folder}/../data/BaseExpression/SRR3192396_salmon_full_quant.sf ]]; then
+        salmon quant -p 4 -l A -i gencode.v26.full -1 ${folder}/../data/BaseExpression/SRR3192396_1.fastq.gz -2 ${folder}/../data/BaseExpression/SRR3192396_2.fasta.gz --gcBias --seqBias --posBias -o ${folder}/../data/BaseExpression/SRR3192396_full
+        mv ${folder}/../data/BaseExpression/SRR3192396_full/quant.sf ${folder}/../data/BaseExpression/SRR3192396_salmon_full_quant.sf
+fi
+if [[ ! -e ${folder}/../data/BaseExpression/SRR3192396_salmon_pc_quant.sf ]]; then
+	salmon quant -p 4 -l A -i gencode.v26.pc -1 ${folder}/../data/BaseExpression/SRR3192396_1.fastq.gz -2 ${folder}/../data/BaseExpression/SRR3192396_2.fasta.gz --gcBias --seqBias --posBias -o ${folder}/../data/BaseExpression/SRR3192396_pc
+	mv ${folder}/../data/BaseExpression/SRR3192396_pc/quant.sf ${folder}/../data/BaseExpression/SRR3192396_salmon_pc_quant.sf
+fi
+if [[ ! -e ${folder}/../data/BaseExpression/SRR3192412_salmon_full_quant.sf ]]; then
+	salmon quant -p 4 -l A -i gencode.v26.full -1 ${folder}/../data/BaseExpression/SRR3192412_1.fastq.gz -2 ${folder}/../data/BaseExpression/SRR3192412_2.fasta.gz --gcBias --seqBias --posBias -o ${folder}/../data/BaseExpression/SRR3192412_full
+	mv ${folder}/../data/BaseExpression/SRR3192412_full/quant.sf ${folder}/../data/BaseExpression/SRR3192412_salmon_full_quant.sf
+fi
+if [[ ! -e ${folder}/../data/BaseExpression/SRR3192412_salmon_pc_quant.sf ]]; then
+	salmon quant -p 4 -l A -i gencode.v26.pc -1 ${folder}/../data/BaseExpression/SRR3192412_1.fastq.gz -2 ${folder}/../data/BaseExpression/SRR3192412_2.fasta.gz --gcBias --seqBias --posBias -o ${folder}/../data/BaseExpression/SRR3192412_pc
+	mv ${folder}/../data/BaseExpression/SRR3192412_pc/quant.sf ${folder}/../data/BaseExpression/SRR3192412_salmon_pc_quant.sf
 fi
 
 # simulating deletion, fusion events of transcriptome; simulating reads with polyester
