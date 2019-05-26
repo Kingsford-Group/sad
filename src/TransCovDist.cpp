@@ -46,6 +46,21 @@ struct Brdy{
 };
 
 
+class Alignment_t{
+public:
+	int32_t TID;
+	int32_t StartPos;
+	int32_t	EndPos;
+	int32_t mate_StartPos;
+	int32_t mate_EndPos;
+
+public:
+	Alignment_t(){};
+	Alignment_t(int32_t TID, int32_t StartPos, int32_t EndPos, int32_t mate_StartPos):
+		TID(TID), StartPos(StartPos), EndPos(EndPos), mate_StartPos(mate_StartPos) {mate_EndPos = -1;};
+};
+
+
 class Transcript_t
 {
 public:
@@ -66,6 +81,42 @@ public:
 			sort(Exons.begin(), Exons.end(), [](pair<int32_t,int32_t> a, pair<int32_t,int32_t> b){return a.first>b.first;} );
 	};
 };
+
+
+vector<Alignment_t> MergeAlignments(const vector<Alignment_t>& alignments)
+{
+	vector<Alignment_t> merged;
+	for (vector<Alignment_t>::const_iterator it = alignments.cbegin(); it != alignments.cend(); it++) {
+		bool has_mate_inserted = false;
+		for (vector<Alignment_t>::iterator itmate = merged.begin(); itmate != merged.end(); itmate++) {
+			if (itmate->TID == it->TID && itmate->mate_StartPos == it->StartPos) {
+				itmate->mate_EndPos = it->EndPos;
+				has_mate_inserted = true;
+				break;
+			}
+		}
+		if (!has_mate_inserted)
+			merged.push_back(*it);
+	}
+	return merged;
+};
+
+
+bool SpanSplicing(const Alignment_t& ali, const Transcript_t& t, int32_t threshold = 5)
+{
+	// loop over the exons, and check whether read/mate align blocks hit the junction
+	int32_t coveredlen = 0;
+	for (int32_t i = 0; i < t.Exons.size(); i++) {
+		// junctions are considered as the end of the exon
+		coveredlen += t.Exons[i].second - t.Exons[i].first;
+		if (ali.StartPos < coveredlen - threshold && ali.EndPos > coveredlen + threshold)
+			return true;
+		else if (ali.mate_StartPos < coveredlen - threshold && ali.mate_EndPos > coveredlen + threshold)
+			return true;
+	}
+	return false;
+};
+
 
 void ReadLowQualReadNames(string file1name, string file2name, vector<string>& LowQualReadNames, bool Phred33=true, int32_t LowThresh=3, double LenPropThresh=0.5)
 {
@@ -236,61 +287,53 @@ string GetFeature(string line, string key)
 	return line.substr(s+key.size()+2, t-s-key.size()-3);
 };
 
-void ReadGTF(string GTFfile, vector<Transcript_t>& Transcripts, const map<string,int32_t>& TransMap)
+void ReadGTF(string GTFfile, map<string, Transcript_t>& Transcripts)
 {
 	Transcripts.clear();
-	vector<Transcript_t> tmpTranscripts;
 
+	// first pass collect all transcripts
 	ifstream input(GTFfile);
 	string line;
-	Transcript_t tmp;
 	while(getline(input, line)){
 		if(line[0]=='#')
 			continue;
 		vector<string> strs;
 		boost::split(strs, line, boost::is_any_of("\t"));
-		// assuming all exons from the same transcripts are next to each other in gtf, and sorted increasingly or decreasingly
-		if(strs[2]=="exon"){
-			string transname=GetFeature(line, "transcript_id");
-			if(transname!=tmp.TransName){
-				if(tmp.Exons.size()>0){
-					tmp.StartPos=min(tmp.Exons.front().first, tmp.Exons.back().first);
-					tmp.EndPos=max(tmp.Exons.front().second, tmp.Exons.back().second);
-					tmpTranscripts.push_back(tmp);
-				}
-				// update to new transcript record
-				tmp.Exons.clear();
-				tmp.Chr=strs[0];
-				tmp.Strand=(strs[6]=="+");
-				tmp.TransName=transname;
-			}
-			assert(strs[0]==tmp.Chr);
-			assert((strs[6]=="+") == tmp.Strand);
-			assert(tmp.TransName==transname);
-			tmp.Exons.push_back(make_pair(stoi(strs[3])-1, stoi(strs[4])));
+		if (strs[2] == "transcript") {
+			string transname = GetFeature(line, "transcript_id");
+			Transcript_t tmp(transname, strs[0], stoi(strs[3])-1, stoi(strs[4]), (strs[6]=="+"));
+			Transcripts[transname] = tmp;
 		}
 	}
-	// dealing with the last record.
-	tmp.StartPos=min(tmp.Exons.front().first, tmp.Exons.back().first);
-	tmp.EndPos=max(tmp.Exons.front().second, tmp.Exons.back().second);
-	tmpTranscripts.push_back(tmp);
 	input.close();
 
-	int32_t maxindex=0;
-	Transcripts=tmpTranscripts;
-	vector<bool> filledin(tmpTranscripts.size(), false);
-	for(int32_t i=0; i<tmpTranscripts.size(); i++){
-		Transcript_t& t=tmpTranscripts[i];
-		t.SortExons();
-		map<string,int32_t>::const_iterator itmap=TransMap.find(t.TransName);
-		if(itmap!=TransMap.cend()){
-			assert(!filledin[itmap->second]);
-			Transcripts[itmap->second]=(t);
-			filledin[itmap->second]=true;
-			maxindex=max(itmap->second, maxindex);
+	// second pass collect exon of each transcript
+	input.open(GTFfile, std::ifstream::in);
+	map<string, Transcript_t>::iterator it = Transcripts.begin();
+	while(getline(input, line)) {
+		if(line[0]=='#')
+			continue;
+		vector<string> strs;
+		boost::split(strs, line, boost::is_any_of("\t"));
+		if (strs[2]=="exon"){
+			string transname=GetFeature(line, "transcript_id");
+			if ((it->second).TransName != transname)
+				it = Transcripts.find(transname);
+			if (it == Transcripts.end()) {
+				cout << "Warning: exons contain unrecognized transcript id " << transname << ", ignoring this exon.\n";
+				continue;
+			}
+			assert(strs[0]==(it->second).Chr);
+			assert((strs[6]=="+") == (it->second).Strand);
+			assert((it->second).TransName==transname);
+			(it->second).Exons.push_back(make_pair(stoi(strs[3])-1, stoi(strs[4])));
 		}
 	}
-	Transcripts.resize(maxindex+1);
+	input.close();
+
+	// sort exons
+	for (map<string, Transcript_t>::iterator it = Transcripts.begin(); it != Transcripts.end(); it++)
+		(it->second).SortExons();
 };
 
 void FLDKDE(vector<int32_t>& RawFLD, vector<double>& FLD, int32_t kernel_n=10, double kernel_p=0.5){
@@ -380,166 +423,6 @@ pair<string,int32_t> GetGenomicPosition(const vector<Transcript_t>& Transcripts,
 	return make_pair(t.Chr, genomepos);
 };
 
-int32_t ReadBAMStartPos(string bamfile, const vector<string>& LowQualReadNames, map<string,int32_t>& Trans, map< vector<int32_t>,int32_t >& EqTransID, 
-	vector<int32_t>& TransLength, map< pair<int32_t,int32_t>,double >& WeightAssign, ofstream& ss){
-	vector<Brdy> ReadBrdy;
-	ReadBrdy.reserve(65536);
-
-	// vector of Trans names
-	vector<string> TransName(Trans.size());
-	for(map<string,int32_t>::iterator it=Trans.begin(); it!=Trans.end(); it++)
-		TransName[it->second]=it->first;
-
-	samFile * bamreader=sam_open(bamfile.c_str(), "r");
-	bam_hdr_t *header=NULL;
-	bam1_t *b=bam_init1();
-
-	// open bam file
-	if(bamreader==NULL){
-		cout<<"cannot open bam file\n";
-		return -1;
-	}
-	if((header=sam_hdr_read(bamreader))==0){
-		cout<<"cannot open header\n";
-		return -1;
-	}
-	// read bam records
-	string prevreadname="";
-	vector<int32_t> readtids;
-	vector< pair<int32_t,int32_t> > alignments;
-	while(sam_read1(bamreader, header, b)>0){
-		// read current info
-		string readname=bam_get_qname(b);
-		map<string,int32_t>::iterator itmap = Trans.find((string)header->target_name[b->core.tid]);
-		if (itmap == Trans.end())
-			continue;
-		int32_t tid=itmap->second;
-		pair<int32_t,int32_t> curalignment(b->core.pos, bam_endpos(b));
-		if((b)->core.flag&BAM_FUNMAP)
-			curalignment.second=curalignment.first;
-		// add to group or process coverage
-		if(readname==prevreadname){
-			readtids.push_back(tid);
-			alignments.push_back(curalignment);
-		}
-		else{
-			if(prevreadname.size()!=0 && !binary_search(LowQualReadNames.cbegin(), LowQualReadNames.cend(), prevreadname)){
-				if(alignments.size()>0){
-					// find the read in eq class
-					vector<int32_t> tidgroup=readtids;
-					sort(tidgroup.begin(), tidgroup.end());
-					vector<int32_t>::iterator itend=unique(tidgroup.begin(), tidgroup.end());
-					tidgroup.resize(distance(tidgroup.begin(), itend));
-
-					int32_t eqID=EqTransID[tidgroup];
-					for(int32_t i=0; i<alignments.size(); i+=2){
-						assert(readtids[i]==readtids[i+1]);
-						double w=WeightAssign[make_pair(eqID,readtids[i])];
-						
-						// coverage is counted as fragment, not each end in read pair
-						int32_t fragstart;
-						fragstart=min(alignments[i].first, alignments[i+1].first);
-						int32_t fragmiddle=(min(alignments[i].first, alignments[i+1].first)+max(alignments[i].second, alignments[i+1].second))/2;
-						Brdy tmpstart(readtids[i], fragstart, false, w);
-						assert(!std::isnan(tmpstart.Weight) && !std::isinf(tmpstart.Weight));
-						// Brdy tmpstart(readtids[i], fragmiddle, false, w);
-						ReadBrdy.push_back(tmpstart);
-						if(ReadBrdy.capacity()==ReadBrdy.size())
-							ReadBrdy.reserve(ReadBrdy.size()*2);
-					}
-				}
-			}
-			prevreadname=readname;
-			readtids.clear();
-			alignments.clear();
-			readtids.push_back(tid);
-			alignments.push_back(curalignment);
-		}
-	}
-	// store the last read alignments
-	if(prevreadname.size()!=0 && !binary_search(LowQualReadNames.cbegin(), LowQualReadNames.cend(), prevreadname)){
-		if(alignments.size()>0){
-			vector<int32_t> tidgroup=readtids;
-			sort(tidgroup.begin(), tidgroup.end());
-			vector<int32_t>::iterator itend=unique(tidgroup.begin(), tidgroup.end());
-			tidgroup.resize(distance(tidgroup.begin(), itend));
-
-			int32_t eqID=EqTransID[tidgroup];
-			for(int32_t i=0; i<alignments.size(); i+=2){
-				assert(readtids[i]==readtids[i+1]);
-				double w=WeightAssign[make_pair(eqID,readtids[i])];
-				
-				int32_t fragstart;
-				fragstart=min(alignments[i].first, alignments[i+1].first);
-				int32_t fragmiddle=(min(alignments[i].first, alignments[i+1].first)+max(alignments[i].second, alignments[i+1].second))/2;
-				Brdy tmpstart(readtids[i], fragstart, false, w);
-				assert(!std::isnan(tmpstart.Weight) && !std::isinf(tmpstart.Weight));
-				// Brdy tmpstart(readtids[i], fragmiddle, false, w);
-				ReadBrdy.push_back(tmpstart);
-			}
-		}
-	}
-
-	bam_destroy1(b);
-	bam_hdr_destroy(header);
-	sam_close(bamreader);
-
-
-	ReadBrdy.reserve(ReadBrdy.size());
-	sort(ReadBrdy.begin(), ReadBrdy.end());
-
-	int32_t numtrans=1;
-	for(vector<Brdy>::iterator it=ReadBrdy.begin(); it!=ReadBrdy.end(); it++)
-		if(it!=ReadBrdy.begin() && it->TID!=(it-1)->TID)
-			numtrans++;
-	ss.write((char*)(&numtrans), sizeof(int32_t));
-
-	vector<int32_t> poses;
-	vector<double> counts;
-	for(vector<Brdy>::iterator it=ReadBrdy.begin(); it!=ReadBrdy.end(); it++){
-		assert(TransLength.size() > it->TID);
-		if(it!=ReadBrdy.begin() && it->TID!=(it-1)->TID){
-			if(poses.back()!=TransLength[(it-1)->TID]-1){
-				poses.push_back(TransLength[(it-1)->TID]-1);
-				counts.push_back(0);
-			}
-
-			string name=TransName[(it-1)->TID];
-
-			int32_t namelen=name.size();
-			assert(counts.size()==poses.size());
-			int32_t vectorlen=poses.size();
-			ss.write(reinterpret_cast<char*>(&namelen), sizeof(int32_t));
-			ss.write(reinterpret_cast<char*>(&vectorlen), sizeof(int32_t));
-			ss.write(name.c_str(), namelen*sizeof(char));
-			ss.write(reinterpret_cast<char*>(poses.data()), vectorlen*sizeof(int32_t));
-			ss.write(reinterpret_cast<char*>(counts.data()), vectorlen*sizeof(double));
-
-			counts.clear();
-			poses.clear();
-		}
-		if(poses.size()==0 || it->Pos!=poses.back()){
-			poses.push_back(it->Pos);
-			counts.push_back(it->Weight);
-		}
-		else
-			counts.back()+=it->Weight;
-	}
-	vector<Brdy>::iterator it=ReadBrdy.end(); it--;
-	if(poses.back()!=TransLength[it->TID]-1){
-		poses.push_back(TransLength[it->TID]-1);
-		counts.push_back(0);
-	}
-	string name=TransName[it->TID];
-	int32_t namelen=name.size();
-	assert(counts.size()==poses.size());
-	int32_t vectorlen=poses.size();
-	ss.write(reinterpret_cast<char*>(&namelen), sizeof(int32_t));
-	ss.write(reinterpret_cast<char*>(&vectorlen), sizeof(int32_t));
-	ss.write(name.c_str(), namelen*sizeof(char));
-	ss.write(reinterpret_cast<char*>(poses.data()), vectorlen*sizeof(int32_t));
-	ss.write(reinterpret_cast<char*>(counts.data()), vectorlen*sizeof(double));
-};
 
 int32_t WriteReadBrdy(map<string,int32_t>& Trans, vector<int32_t>& TransLength, vector<Brdy>& ReadBrdy, ofstream& ss)
 {
@@ -604,6 +487,129 @@ int32_t WriteReadBrdy(map<string,int32_t>& Trans, vector<int32_t>& TransLength, 
 
 	return 0;
 };
+
+
+int32_t ReadBAMStartPos(string bamfile, const vector<string>& LowQualReadNames, map<string,int32_t>& Trans, map< vector<int32_t>,int32_t >& EqTransID, 
+	vector<int32_t>& TransLength, map< pair<int32_t,int32_t>,double >& WeightAssign, const map<string, Transcript_t>& transcripts, 
+	ofstream& ss, ofstream& ss_junction){
+	vector<Brdy> ReadBrdy;
+	vector<Brdy> JunctionBrdy;
+
+	// vector of Trans names
+	vector<string> TransName(Trans.size());
+	for(map<string,int32_t>::iterator it=Trans.begin(); it!=Trans.end(); it++)
+		TransName[it->second]=it->first;
+
+	samFile * bamreader=sam_open(bamfile.c_str(), "r");
+	bam_hdr_t *header=NULL;
+	bam1_t *b=bam_init1();
+
+	// open bam file
+	if(bamreader==NULL){
+		cout<<"cannot open bam file\n";
+		return -1;
+	}
+	if((header=sam_hdr_read(bamreader))==0){
+		cout<<"cannot open header\n";
+		return -1;
+	}
+	// read bam records
+	string prevreadname="";
+	// vector<int32_t> readtids;
+	// vector< pair<int32_t,int32_t> > alignments;
+	vector<Alignment_t> alignments;
+	while(sam_read1(bamreader, header, b)>0){
+		// read current info
+		string readname=bam_get_qname(b);
+		map<string,int32_t>::iterator itmap = Trans.find((string)header->target_name[b->core.tid]);
+		if (itmap == Trans.end())
+			continue;
+		int32_t tid=itmap->second;
+		// pair<int32_t,int32_t> curalignment(b->core.pos, bam_endpos(b));
+		// if((b)->core.flag&BAM_FUNMAP)
+		// 	curalignment.second=curalignment.first;
+		Alignment_t curalignment(tid, b->core.pos, bam_endpos(b), b->core.mpos);
+		// add to group or process coverage
+		if(readname==prevreadname)
+			alignments.push_back(curalignment);
+		else{
+			if(prevreadname.size()!=0 && !binary_search(LowQualReadNames.cbegin(), LowQualReadNames.cend(), prevreadname)){
+				if(alignments.size()>0){
+					vector<Alignment_t> merged = MergeAlignments(alignments);
+					// find the read in eq class
+					vector<int32_t> tidgroup;
+					for (vector<Alignment_t>::const_iterator it = merged.cbegin(); it != merged.cend(); it++)
+						tidgroup.push_back(it->TID);
+					sort(tidgroup.begin(), tidgroup.end());
+					vector<int32_t>::iterator itend=unique(tidgroup.begin(), tidgroup.end());
+					tidgroup.resize(distance(tidgroup.begin(), itend));
+
+					int32_t eqID=EqTransID[tidgroup];
+					for(int32_t i=0; i<merged.size(); i++){
+						double w=WeightAssign[make_pair(eqID, merged[i].TID)];
+						
+						// coverage is counted as fragment, not each end in read pair
+						int32_t fragstart;
+						fragstart=min(merged[i].StartPos, merged[i].mate_StartPos);
+						Brdy tmpstart(merged[i].TID, fragstart, false, w);
+						assert(!std::isnan(tmpstart.Weight) && !std::isinf(tmpstart.Weight));
+						ReadBrdy.push_back(tmpstart);
+
+						// check whether hit splicing junction
+						string transname(header->target_name[merged[i].TID]);
+						map<string, Transcript_t>::const_iterator ittrans = transcripts.find(transname);
+						assert(ittrans != transcripts.cend());
+						if (SpanSplicing(merged[i], ittrans->second))
+							JunctionBrdy.push_back(tmpstart);
+					}
+				}
+			}
+			prevreadname=readname;
+			alignments.clear();
+			alignments.push_back(curalignment);
+		}
+	}
+	// store the last read alignments
+	if(prevreadname.size()!=0 && !binary_search(LowQualReadNames.cbegin(), LowQualReadNames.cend(), prevreadname)){
+		if(alignments.size()>0){
+			vector<Alignment_t> merged = MergeAlignments(alignments);
+			// find the read in the eq class
+			vector<int32_t> tidgroup;
+			for (vector<Alignment_t>::const_iterator it = merged.cbegin(); it != merged.cend(); it++)
+				tidgroup.push_back(it->TID);
+			sort(tidgroup.begin(), tidgroup.end());
+			vector<int32_t>::iterator itend=unique(tidgroup.begin(), tidgroup.end());
+			tidgroup.resize(distance(tidgroup.begin(), itend));
+
+			int32_t eqID=EqTransID[tidgroup];
+			for(int32_t i=0; i<merged.size(); i+=2){
+				double w=WeightAssign[make_pair(eqID,merged[i].TID)];
+				
+				int32_t fragstart;
+				fragstart=min(merged[i].StartPos, merged[i].mate_StartPos);
+				Brdy tmpstart(merged[i].TID, fragstart, false, w);
+				assert(!std::isnan(tmpstart.Weight) && !std::isinf(tmpstart.Weight));
+				// Brdy tmpstart(readtids[i], fragmiddle, false, w);
+				ReadBrdy.push_back(tmpstart);
+
+				// check whether hit splicing junction
+				string transname(header->target_name[merged[i].TID]);
+				map<string, Transcript_t>::const_iterator ittrans = transcripts.find(transname);
+				assert(ittrans != transcripts.cend());
+				if (SpanSplicing(merged[i], ittrans->second))
+					JunctionBrdy.push_back(tmpstart);
+			}
+		}
+	}
+
+	bam_destroy1(b);
+	bam_hdr_destroy(header);
+	sam_close(bamreader);
+
+	int32_t flag1 = WriteReadBrdy(Trans, TransLength, ReadBrdy, ss);
+	int32_t flag2 = WriteReadBrdy(Trans, TransLength, JunctionBrdy, ss_junction);
+};
+
 
 int32_t ReadBAMSingleMapStartPos2(string bamfile, const vector<string>& LowQualReadNames, map<string,int32_t>& Trans, map< vector<int32_t>,int32_t >& EqTransID, 
 	vector<int32_t>& TransLength, map< pair<int32_t,int32_t>,double >& WeightAssign, ofstream& ss, ofstream& ss_bad){
@@ -925,22 +931,26 @@ int32_t ReadSalmonFragLen(string bamfile, const vector<string>& LowQualReadNames
 
 int32_t main(int32_t argc, char* argv[]){
 	if(argc==1){
-		printf("transcovdist <mode> <quantfile> <eqfile> <bamfile> <outfile> (--fld <FLDfile if mode 2>\n");
+		printf("transcovdist <mode> <gtffile> <quantfile> <eqfile> <bamfile> <outfile> (--fld <FLDfile if mode 2>\n");
 		printf("\tmode 0: all salmon mapped reads\n");
 		printf("\tmode 1: single-end mapped redas by salmon\n");
 		printf("\tmode 2: fragment length mean and std\n");
 	}
 	else{
-		string QuantFile(argv[2]);
-		string EqFile(argv[3]);
-		string BamFile(argv[4]);
-		string OutFile(argv[5]);
+		string GTFfile(argv[2]);
+		string QuantFile(argv[3]);
+		string EqFile(argv[4]);
+		string BamFile(argv[5]);
+		string OutFile(argv[6]);
 
 		string FLDfile="";
 		for(int32_t i=7; i<argc; i+=2){
 			if(string(argv[i])=="--fld")
 				FLDfile=string(argv[i+1]);
 		}
+
+		map<string, Transcript_t> transcripts;
+		ReadGTF(GTFfile, transcripts);
 
 		vector<string> LowQualReadNames;
 
@@ -960,8 +970,16 @@ int32_t main(int32_t argc, char* argv[]){
 		/*GetEqTrans(EqFile, Trans, TransNames, EqTransID);
 		GetSalmonWeightAssign(AssignFile, WeightAssign);*/
 
-		if(atoi(argv[1])==0)
-			ReadBAMStartPos(BamFile, LowQualReadNames, Trans, EqTransID, TransLength, WeightAssign, ss);
+		if(atoi(argv[1])==0) {
+			string OutJunctionFile;
+			size_t suffixpos = OutFile.find_last_of(".");
+			if(suffixpos != string::npos)
+				OutJunctionFile = OutFile.substr(0, suffixpos) + "_junction"+OutFile.substr(suffixpos);
+			else
+				OutJunctionFile = OutFile+"_junction";
+			ofstream ss_junction(OutJunctionFile, ios::out | ios::binary);
+			ReadBAMStartPos(BamFile, LowQualReadNames, Trans, EqTransID, TransLength, WeightAssign, transcripts, ss, ss_junction);
+		}
 		else if(atoi(argv[1])==1){
 			string OutBadFile;
 			size_t suffixpos = OutFile.find_last_of(".");
