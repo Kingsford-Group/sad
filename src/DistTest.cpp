@@ -868,13 +868,14 @@ void DistTest_t::PValue_regional(vector<PRegion_t>& PValuesPos, vector<PRegion_t
 };
 
 
-void DistTest_t::PValue_regional(const vector<int32_t>& AdjustmentList, vector<PRegion_t>& PValuesPos, vector<PRegion_t>& PValuesNeg)
+void DistTest_t::PValue_regional(const vector<int32_t>& AdjustmentList, vector<PRegion_t>& PValuesPos, vector<PRegion_t>& PValuesNeg, bool print_time)
 {
 	time_t CurrentTime;
 	string CurrentTimeStr;
 	time(&CurrentTime);
 	CurrentTimeStr=ctime(&CurrentTime);
-	cout<<"["<<CurrentTimeStr.substr(0, CurrentTimeStr.size()-1)<<"] "<<"Calculating regional P-value."<<endl;
+	if (print_time)
+		cout<<"["<<CurrentTimeStr.substr(0, CurrentTimeStr.size()-1)<<"] "<<"Calculating regional P-value."<<endl;
 
 	// clear variables
 	PValuesPos.clear();
@@ -899,8 +900,10 @@ void DistTest_t::PValue_regional(const vector<int32_t>& AdjustmentList, vector<P
 
 	time(&CurrentTime);
 	CurrentTimeStr=ctime(&CurrentTime);
-	cout << "[" << CurrentTimeStr.substr(0, CurrentTimeStr.size()-1) << "] " << "Finish regional P-value calculation. There are ";
-	cout << (PValuesPos.size()) << " positive bins and " << (PValuesNeg.size()) << " negative bins." << "\n";
+	if (print_time) {
+		cout << "[" << CurrentTimeStr.substr(0, CurrentTimeStr.size()-1) << "] " << "Finish regional P-value calculation. There are ";
+		cout << (PValuesPos.size()) << " positive bins and " << (PValuesNeg.size()) << " negative bins." << "\n";
+	}
 };
 
 

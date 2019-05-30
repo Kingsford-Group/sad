@@ -184,6 +184,257 @@ LPReassign_t::LPReassign_t(const map<string,int32_t>& _TransIndex, const map<str
 };
 
 
+void LPReassign_t::InitializeJunction(const vector<Transcript_t>& Transcripts, const vector< vector<double> >& junc_obs)
+{
+	time_t CurrentTime;
+	string CurrentTimeStr;
+	time(&CurrentTime);
+	CurrentTimeStr=ctime(&CurrentTime);
+	cout<<"["<<CurrentTimeStr.substr(0, CurrentTimeStr.size()-1)<<"] "<<"Adding junction support."<<endl;
+
+	// clear variables
+	Gene_Junctions.clear();
+	JunctionExistence.clear();
+	for (int32_t i = 0; i < TransIndex.size(); i++) {
+		Eigen::VectorXi tmp;
+		JunctionExistence.push_back(tmp);
+	}
+	JunctionObserveFull.clear();
+	JunctionObserveBin.clear();
+	JunctionRelevance.clear();
+	Original_junction_trans_full.clear();
+	Original_junction_trans_bin.clear();
+
+	// convert the observed to gene-level coordinate in full
+	assert( junc_obs.size() == TransIndex.size() );
+	for (int32_t i = 0; i < junc_obs.size(); i++) {
+		Eigen::VectorXd tmpobs = Eigen::VectorXd::Zero(ObservedFull[i].size());
+		int32_t count = 0;
+		for (int32_t j = 0; j < PositionExistence[i].size(); j++) {
+			if (PositionExistence[i][j]) {
+				tmpobs(j) = junc_obs[i][count];
+				count++;
+			}
+		}
+		Original_junction_trans_full.push_back( tmpobs );
+	}
+	// binning for Original_junction_trans_bin
+	for (int32_t i = 0; i < PositionExistence.size(); i++) {
+		int32_t oldlen = Original_junction_trans_full[i].size();
+		int32_t newlen = int32_t(ceil(1.0 * oldlen / Bin_Size));
+		Eigen::VectorXd tmpobs = Eigen::VectorXd::Zero(newlen);
+		for (int32_t j = 0; j < newlen; j++)
+			tmpobs(j) = Original_junction_trans_full[i].segment(Bin_Size*j, min(Bin_Size,oldlen-Bin_Size*j)).sum();
+		Original_junction_trans_bin.push_back(tmpobs);
+	}
+
+	// listing out junctions
+	for (map<string, vector<int32_t> >::const_iterator it = GeneTransMap.cbegin(); it != GeneTransMap.cend(); it++) {
+		const string& g = it->first;
+		const vector<int32_t>& tids = it->second;
+		vector<Junction_t> junctions;
+		// loop over each transcript to add the junctions
+		for (const int32_t& tid : tids) {
+			const Transcript_t& t = Transcripts[tid];
+			if (t.Strand) {
+				for (int32_t i = 1; i < t.Exons.size(); i++) {
+					Junction_t tmp(t.Chr, t.Exons[i-1].EndPos, t.Exons[i].StartPos);
+					junctions.push_back(tmp);
+				}
+			}
+			else {
+				for (int32_t i = 1; i < t.Exons.size(); i++) {
+					Junction_t tmp(t.Chr, t.Exons[i].EndPos, t.Exons[i-1].StartPos);
+					junctions.push_back(tmp);
+				}
+			}
+		}
+		// find unique junctions
+		sort(junctions.begin(), junctions.end());
+		junctions.resize( distance(junctions.begin(), unique(junctions.begin(), junctions.end()) ) );
+		junctions.reserve( junctions.size() );
+		// update the gene to junction map
+		Gene_Junctions[g] = junctions;
+		// update the junction existence matrix of each transcript
+		Eigen::VectorXi sumtmp = Eigen::VectorXi::Zero(junctions.size());
+		for (const int32_t& tid : tids) {
+			vector<int32_t> this_junction_existence(junctions.size(), 0);
+			const Transcript_t& t = Transcripts[tid];
+			if (t.Strand) {
+				for (int32_t i = 1; i < t.Exons.size(); i++) {
+					Junction_t tmp(t.Chr, t.Exons[i-1].EndPos, t.Exons[i].StartPos);
+					for (int32_t j = 0; j < junctions.size(); j++) {
+						if (tmp == junctions[j]) {
+							this_junction_existence[j] = 1;
+							break;
+						}
+					}
+				}
+			}
+			else {
+				for (int32_t i = 1; i < t.Exons.size(); i++) {
+					Junction_t tmp(t.Chr, t.Exons[i].EndPos, t.Exons[i-1].StartPos);
+					for (int32_t j = 0; j < junctions.size(); j++) {
+						if (tmp == junctions[j]) {
+							this_junction_existence[j] = 1;
+							break;
+						}
+					}
+				}
+			}
+			Eigen::VectorXi tmp = Eigen::Map<Eigen::VectorXi, Eigen::Unaligned>(this_junction_existence.data(), this_junction_existence.size());
+			JunctionExistence[tid] = tmp;
+			sumtmp += tmp;
+		}
+		for (int32_t i = 0; i < sumtmp.size(); i++) {
+			assert(sumtmp[i] > 0);
+		}
+	}
+
+	// based on the number of junctions per gene, initialize junction observed
+	for (map< string, vector<Junction_t> >::const_iterator it = Gene_Junctions.cbegin(); it != Gene_Junctions.cend(); it++) {
+		const string& g = it->first;
+		vector< Eigen::VectorXd > v_obs;
+		int32_t tid = GeneTransMap[g].front();
+		// for JunctionObserveFull
+		int32_t npos = ExpectedFullNorm[tid].size();
+		for (int32_t i = 0; i < (it->second).size(); i++) {
+			Eigen::VectorXd tmp = Eigen::VectorXd::Zero(npos);
+			v_obs.push_back(tmp);
+		}
+		JunctionObserveFull[g] = v_obs;
+	}
+	// loop over obs per transcript, and add to obs per junction
+	for (int32_t i = 0; i < junc_obs.size(); i++) {
+		// skip the records with no coverage
+		const vector<double>& this_obs = junc_obs[i];
+		double sum = std::accumulate(this_obs.cbegin(), this_obs.cend(), 0.0);
+		if (sum < 1e-8)
+			continue;
+		// for the ones with coverage, loop over each exon to see whether the succeeding junction has read support
+		string g = TransGeneMap[i];
+		const Transcript_t& t = Transcripts[i];
+		const vector<Junction_t>& junctions = Gene_Junctions[g];
+		// variables to update
+		vector< Eigen::VectorXd >& obs_full = JunctionObserveFull[g];
+		assert(i == TransIndex.at(t.TransID));
+		int32_t covered_length = 0;
+		for (vector<Exon_t>::const_iterator itexon = t.Exons.cbegin(); itexon != t.Exons.cend(); itexon++) {
+			sum = std::accumulate(this_obs.cbegin() + covered_length, this_obs.cbegin() + covered_length + itexon->EndPos - itexon->StartPos, 0.0);
+			int32_t end_length = covered_length + itexon->EndPos - itexon->StartPos;
+			if (sum > 1e-8) {
+				assert( itexon + 1 != t.Exons.cend() );
+				// find the index of junction in the junction list
+				Junction_t tmp;
+				if (t.Strand)
+					tmp.Init(t.Chr, itexon->EndPos, (itexon+1)->StartPos);
+				else
+					tmp.Init(t.Chr, (itexon+1)->EndPos, itexon->StartPos);
+				for (int32_t j = 0; j < junctions.size(); j++) {
+					if (tmp == junctions[j]) {
+						int32_t count = 0;
+						for (int32_t pos = 0; pos < PositionExistence[i].size(); pos++) {
+							if (PositionExistence[i][pos]) {
+								if (count >= covered_length && count < end_length)
+									obs_full[j][pos] += this_obs[count];
+								count ++;
+							}
+						}
+						break;
+					}
+				}
+			}
+			covered_length += itexon->EndPos - itexon->StartPos;
+		}
+	}
+
+	// bin JunctionObserveFull to get JunctionObserveBin
+	for (map< string, vector< Eigen::VectorXd > >::const_iterator it = JunctionObserveFull.cbegin(); it != JunctionObserveFull.cend(); it++) {
+		const string& g = it->first;
+		const vector< Eigen::VectorXd >& obs_full = it->second;
+		int32_t oldlen = 0;
+		int32_t newlen = 0;
+		if (obs_full.size() > 0) {
+			oldlen = obs_full[0].size();
+			newlen = int32_t(ceil(1.0 * oldlen / Bin_Size));
+		}
+		// new result
+		vector< Eigen::VectorXd> obs_bin;
+		for (int32_t i = 0; i < obs_full.size(); i++) {
+			assert(obs_full[i].size() == oldlen);
+			Eigen::VectorXd tmp = Eigen::VectorXd::Zero(newlen);
+			for (int32_t j = 0; j < newlen; j++){
+				tmp(j) = obs_full[i].segment(Bin_Size*j, min(Bin_Size,oldlen-Bin_Size*j)).sum();
+			}
+			obs_bin.push_back(tmp);
+		}
+		JunctionObserveBin[g] = obs_bin;
+	}
+
+	// indicate relevant positions: the bin that contain the junction plus the bins with nonzero coverage
+	for (map< string, vector<Junction_t> >::const_iterator it = Gene_Junctions.cbegin(); it != Gene_Junctions.cend(); it++) {
+		const string& g = it->first;
+		const vector<Junction_t>& junctions = it->second;
+		const vector< Eigen::VectorXd >& obs_bin = JunctionObserveBin[g];
+		const vector<int32_t> tids = GeneTransMap[g];
+		// result variable
+		vector< Eigen::VectorXi > relevance;
+		for (int32_t i = 0; i < junctions.size(); i++) {
+			// find the tid that contain the junction
+			int32_t tid = -1;
+			for (int32_t j = 0; j < tids.size(); j++) {
+				assert(JunctionExistence[tids[j]].size() == junctions.size());
+				if (JunctionExistence[tids[j]][i]) {
+					tid = tids[j];
+					break;
+				}
+			}
+			assert(tid != -1);
+			// retrieve the trancript info of tid
+			const Transcript_t& t = Transcripts[tid];
+			// find the corresponding junction position in transcript tid
+			int32_t pos_in_trans = -1;
+			int32_t covered_length = 0;
+			for (vector<Exon_t>::const_iterator itexon = t.Exons.cbegin(); itexon != t.Exons.cend(); itexon++) {
+				if (itexon + 1 == t.Exons.cend())
+					break;
+				Junction_t tmp;
+				if (t.Strand)
+					tmp.Init(t.Chr, itexon->EndPos, (itexon+1)->StartPos);
+				else
+					tmp.Init(t.Chr, (itexon+1)->EndPos, itexon->StartPos);
+				if (tmp == junctions[i])
+					pos_in_trans = covered_length + itexon->EndPos - itexon->StartPos;
+				covered_length += itexon->EndPos - itexon->StartPos;
+			}
+			assert(pos_in_trans != -1);
+			// convert to gene-level coordinate
+			int32_t pos_in_gene = 0;
+			int32_t count = 0;
+			for (; pos_in_gene < PositionExistence[tid].size(); pos_in_gene++) {
+				if (PositionExistence[tid][pos_in_gene])
+					count ++;
+				if (count == pos_in_trans)
+					break;
+			}
+			assert(pos_in_gene > 0);
+			// convert to binned position
+			int32_t pos_in_bin = pos_in_gene / Bin_Size;
+			Eigen::VectorXi tmp = Eigen::VectorXi::Zero(obs_bin[0].size());
+			tmp[pos_in_bin] = 1;
+			if (pos_in_bin > 0)
+				tmp[pos_in_bin - 1] = 1;
+			relevance.push_back(tmp);
+		}
+		JunctionRelevance[g] = relevance;
+	}
+
+	time(&CurrentTime);
+	CurrentTimeStr=ctime(&CurrentTime);
+	cout << "[" << CurrentTimeStr.substr(0, CurrentTimeStr.size()-1) << "] " << "Finished adding junction support.\n";
+};
+
+
 LPReassign_t::LPReassign_t(const map<string,int32_t>& _TransIndex, const map<string,string>& _TransGeneMap, 
 	const map<string, vector<string> >& _GeneTransMap, const vector<Transcript_t>& Transcripts, 
 	const vector< vector<double> >& Expected, const vector< vector<double> >& Observed, int32_t _Bin_Size, int32_t _Num_Threads)
@@ -239,6 +490,110 @@ vector<double> LPReassign_t::Quantify_singlecase(Eigen::MatrixXd& exp, Eigen::Ve
 	// |    -E_{(n+d)-by-(n+d)}   |   |X|   <=   |0_{(n+d)-by-1}|
 	//                                |C|
 	// this can be ignored, since non-negative contraints are specified in addVar part
+	// solve the LP model
+	model.optimize();
+	// collect quantification alpha
+	vector<double> alpha(exp.cols(), 0);
+	for (int32_t i = 0; i < exp.cols(); i++)
+		alpha[i] = X[i].get(GRB_DoubleAttr_X);
+	// for 0 alphas, assign to a very small positive value, in order to assign position-wise number of reads
+	for (int32_t i = 0; i < exp.cols(); i++) {
+		assert( alpha[i] >= -1e-4);
+		if (alpha[i] <= 0)
+			alpha[i] = 1e-8;
+	}
+	return alpha;
+};
+
+
+vector<double> LPReassign_t::Quantify_singlecase_junction(Eigen::MatrixXd& exp, Eigen::VectorXd& obs, const vector< Eigen::VectorXi >& relevance, 
+	const vector< Eigen::VectorXd >& obs_bin, const vector< Eigen::VectorXi >& existence)
+{
+	assert(exp.rows() == obs.size());
+	// create GUROBI environment
+	GRBEnv env = GRBEnv();
+	GRBModel model = GRBModel(env);
+	// silence std out parameter
+	model.set(GRB_IntParam_OutputFlag, 0);
+	// add variables
+	vector<GRBVar> X;
+	vector<GRBVar> C;
+	for (int32_t i = 0; i < exp.cols(); i++) {
+		// lower bound, upper bound, objective coefficient, type, name
+		GRBVar x = model.addVar(0, obs.sum(), 0, GRB_CONTINUOUS, "x"+to_string(i));
+		X.push_back(x);
+	}
+	for (int32_t i = 0; i < exp.rows(); i++) {
+		GRBVar c = model.addVar(0, obs.sum(), 1, GRB_CONTINUOUS, "c"+to_string(i));
+		C.push_back(c);
+	}
+	// variable for junctions
+	vector< vector<GRBVar> > C_junction;
+	for (int32_t i = 0; i < obs_bin.size(); i++) {
+		vector<GRBVar> tmp;
+		for (int32_t j = 0; j < exp.rows(); j++) {
+			GRBVar c = model.addVar(0, obs.sum(), 1, GRB_CONTINUOUS, "c_junction_"+to_string(i)+"_"+to_string(j));
+			tmp.push_back(c);
+		}
+		C_junction.push_back(tmp);
+	}
+	// set optimization direction to minimize
+	model.set(GRB_IntAttr_ModelSense, 1);
+	model.update();
+	// set up constraints
+	// |  T_{d-by-n}  -E_{d-by-d} |   |X|   <=   |  Y_{d-by-1}  |
+	//                                |C|
+	for (int32_t i = 0; i < exp.rows(); i++) {
+		GRBLinExpr obj = 0.0;
+		for (int32_t j = 0; j < exp.cols(); j++)
+			obj += exp(i,j)*X[j];
+		obj += -1*C[i];
+		// lhs expression, sense, rhs value, name
+		model.addConstr(obj, GRB_LESS_EQUAL, obs(i), "const"+to_string(i));
+	}
+	// | -T_{d-by-n}  -E_{d-by-d} |   |X|   <=   | -Y_{d-by-1}  |
+	//                                |C|
+	for (int32_t i = 0; i < exp.rows(); i++) {
+		GRBLinExpr obj = 0.0;
+		for (int32_t j = 0; j < exp.cols(); j++)
+			obj += -exp(i,j)*X[j];
+		obj += -1*C[i];
+		// lhs expression, sense, rhs value, name
+		model.addConstr(obj, GRB_LESS_EQUAL, -obs(i), "const"+to_string(i+exp.rows()));
+	}
+	// comparing the linear combination of expected distribution to the support of each junction
+	for (int32_t i = 0; i < obs_bin.size(); i++) {
+		// | relevance diagonal * T_{d-by-n} * existence diagonal  -E_{d-by-d} |    |       X      |    <=     |obs_bin_{junction i}|
+		//                                                                          |C_{junction i}|
+		Eigen::MatrixXd diag_relevance = Eigen::MatrixXd::Zero(relevance[i].size(), relevance[i].size());
+		for (int32_t j = 0; j < relevance[i].size(); j++)
+			diag_relevance(j,j) = relevance[i](j);
+		Eigen::MatrixXd diag_existence = Eigen::MatrixXd::Zero(exp.cols(), exp.cols());
+		assert( existence.size() == exp.cols() );
+		for (int32_t j = 0; j < existence.size(); j++)
+			diag_existence(j,j) = existence[j](i);
+		assert(diag_relevance.sum() > 0);
+		Eigen::MatrixXd m = diag_relevance * exp * diag_existence;
+		assert(m.rows() == exp.rows() && m.cols() == exp.cols());
+		for (int32_t j = 0; j < m.rows(); j++) {
+			GRBLinExpr obj = 0.0;
+			for (int32_t k = 0; k < m.cols(); k++)
+				obj += m(j, k) * X[k];
+			obj += -1 * C_junction[i][j];
+			// lhs expression, sense, rhs value, name
+			model.addConstr(obj, GRB_LESS_EQUAL, obs_bin[i](j), "const_junction_"+to_string(i)+"_"+to_string(j));
+		}
+		// | -relevance diagonal * T_{d-by-n} * existence diagonal  -E_{d-by-d} |    |       X      |    <=     |-obs_bin_{junction i}|
+		//                                                                           |C_{junction i}|
+		for (int32_t j = 0; j < m.rows(); j++) {
+			GRBLinExpr obj = 0.0;
+			for (int32_t k = 0; k < m.cols(); k++)
+				obj += -m(j, k) * X[k];
+			obj += -1 * C_junction[i][j];
+			// lhs expression, sense, rhs value, name
+			model.addConstr(obj, GRB_LESS_EQUAL, -obs_bin[i](j), "const_junction_"+to_string(i)+"_"+to_string(j+exp.rows()));
+		}
+	}
 	// solve the LP model
 	model.optimize();
 	// collect quantification alpha
@@ -416,6 +771,36 @@ vector<double> LPReassign_t::ReassignReads(vector< vector<double> >& newAssignme
 			obs += ObservedBin[tids[i]];
 		// quantify
 		vector<double> alpha = Quantify_singlecase(exp, obs);
+
+		// test for Quantify_singlecase_junction
+		vector< Eigen::VectorXd > obs_junction_full = JunctionObserveFull[g];
+		vector< Eigen::VectorXd > obs_junction_bin = JunctionObserveBin[g];
+		// remove the junction reads from transcripts not involved in reassignment
+		for (int32_t& t : GeneTransMap[g]) {
+			map<int32_t,int32_t>::const_iterator ittempidx = TempIndex.find(t);
+			if (ittempidx == TempIndex.cend()) {
+				for (int32_t i = 0; i < obs_junction_full.size(); i++) {
+					obs_junction_full[i] -= Original_junction_trans_full[t];
+					obs_junction_bin[i] -= Original_junction_trans_bin[t];
+					// since Original_junction_trans_full contain the junction reads of all junctions, but obs_junction_full[i] only contains 1 junction, the subtraction may lead to negative values of the other junctions
+					// set the negative junction coverage to 0
+					for (int32_t pos = 0; pos < obs_junction_full[i].size(); pos++) {
+						if (obs_junction_full[i](pos) < 0)
+							obs_junction_full[i](pos) = 0;
+					}
+					for (int32_t pos = 0; pos < obs_junction_bin[i].size(); pos++) {
+						if (obs_junction_bin[i](pos) < 0)
+							obs_junction_bin[i](pos) = 0;
+					}
+				}
+			}
+		}
+		vector< Eigen::VectorXi > relevance = JunctionRelevance[g];
+		vector< Eigen::VectorXi > existence;
+		for (int32_t i = 0; i < tids.size(); i++)
+			existence.push_back( JunctionExistence[tids[i]] );
+		vector<double> alpha2 = Quantify_singlecase_junction(exp, obs, relevance, obs_junction_bin, existence);
+		// end test
 		// re-assign on base-pair level
 		Eigen::MatrixXd expfull(ExpectedFullNorm[tids[0]].size(), tids.size());
 		for(int32_t i = 0; i < tids.size(); i++)
@@ -423,16 +808,57 @@ vector<double> LPReassign_t::ReassignReads(vector< vector<double> >& newAssignme
 		Eigen::VectorXd obsfull = Eigen::VectorXd::Zero(ExpectedFullNorm[tids[0]].size());
 		for(int32_t i = 0; i < tids.size(); i++)
 			obsfull += ObservedFull[tids[i]];
+		// test for Quantify_singlecase_junction
+		for (int32_t i = 0; i < obs_junction_full.size(); i++)
+			obsfull -= obs_junction_full[i];
+		// sanity check that obsfull is non-negative
+		for (int32_t i = 0; i < obsfull.size(); i++) {
+			if (obsfull[i] < -1e-8)
+				cout << "watch here\n";
+			assert(obsfull(i) > -1e-8);
+		}
+		// reads that don't span junctions
 		Eigen::MatrixXd tmp_assign_full = Eigen::MatrixXd::Zero(expfull.rows(), expfull.cols());
-		for(int32_t i = 0; i < obsfull.size(); i++) {
-			Eigen::VectorXd tmpalpha = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(alpha.data(), alpha.size());
+		for (int32_t i = 0; i < obsfull.size(); i++) {
+			Eigen::VectorXd tmpalpha = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(alpha2.data(), alpha2.size());
 			Eigen::ArrayXd assign_theo = expfull.row(i).array().transpose() * tmpalpha.array();
-			assert( obsfull[i] >= 0 );
-			for (int32_t j = 0; j < assign_theo.size(); j++)
-				assert( assign_theo[j] >= 0);
 			if (assign_theo.sum() != 0)
 				tmp_assign_full.row(i) = obsfull(i) * assign_theo / (assign_theo.sum());
 		}
+		// junction reads
+		for (int32_t i = 0; i < obs_junction_full.size(); i++) {
+			Eigen::VectorXd tmpalpha = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(alpha2.data(), alpha2.size());
+			Eigen::VectorXd this_exist = Eigen::VectorXd::Zero(expfull.cols());
+			for (int32_t k = 0; k < expfull.cols(); k++)
+				this_exist(k) = existence[k](i);
+			for (int32_t pos = 0; pos < expfull.rows(); pos++) {
+				Eigen::ArrayXd assign_theo = expfull.row(pos).array().transpose() * tmpalpha.array() * this_exist.array();
+				// assign_theo = assign_theo.transpose() * this_exist.array();
+				if (assign_theo.sum() != 0)
+					tmp_assign_full.row(pos) += obs_junction_full[i](pos) * assign_theo.matrix() / (assign_theo.sum());
+			}
+		}
+		// sanity check non-negative
+		for (int32_t i = 0; i < tmp_assign_full.rows(); i++)
+			for (int32_t j = 0; j < tmp_assign_full.cols(); j++) {
+				if (tmp_assign_full(i,j) < -1e-8)
+					cout << "watch here\n";
+				assert(tmp_assign_full(i,j) > -1e-8);
+				if (tmp_assign_full(i,j) < 0)
+					tmp_assign_full(i,j) = 0;
+			}
+		// end test
+
+		// Eigen::MatrixXd tmp_assign_full = Eigen::MatrixXd::Zero(expfull.rows(), expfull.cols());
+		// for(int32_t i = 0; i < obsfull.size(); i++) {
+		// 	Eigen::VectorXd tmpalpha = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(alpha.data(), alpha.size());
+		// 	Eigen::ArrayXd assign_theo = expfull.row(i).array().transpose() * tmpalpha.array();
+		// 	assert( obsfull[i] >= 0 );
+		// 	for (int32_t j = 0; j < assign_theo.size(); j++)
+		// 		assert( assign_theo[j] >= 0);
+		// 	if (assign_theo.sum() != 0)
+		// 		tmp_assign_full.row(i) = obsfull(i) * assign_theo / (assign_theo.sum());
+		// }
 		// convert to separate transcript index based on PositionExistence matrix
 		for(int32_t i = 0; i < tids.size(); i++){
 			vector<double> tmp;
@@ -555,8 +981,6 @@ vector<double> LPReassign_t::ReassignReads(vector< vector<double> >& newAssignme
 		sort(movingreads.begin(), movingreads.end());
 		MovingMat[g] = movingreads;
 	}
-
-	cout << (MovingMat.size()) <<"\t"<< (involved_genes.size()) << endl;
 	
 	return LPExp;
 };
@@ -630,7 +1054,7 @@ vector<int32_t> LPReassign_t::RefineLPTrans_singlecase(const vector<int32_t>& sh
 			vector<PRegion_t> removedPValueNeg;
 			dt.UpdateObserved(removedAdjList, removedAssignment);
 			dt.CalDeletionScore(removedAdjList);
-			dt.PValue_regional(removedAdjList, removedPValuePos, removedPValueNeg);
+			dt.PValue_regional(removedAdjList, removedPValuePos, removedPValueNeg, false);
 			// adding the rest LP pvalues
 			for (int32_t j = 0; j < shortPValuesPos_salmon.size(); j++) {
 				if (!binary_search(removedAdjList.begin(), removedAdjList.end(), shortPValuesPos_salmon[j].TID))
@@ -715,7 +1139,7 @@ vector<int32_t> LPReassign_t::RefineLPTrans(DistTest_t& dt,
 	vector<PRegion_t> copyAdjPValuesPos_salmon(AdjPValuesPos_salmon.cbegin(), AdjPValuesPos_salmon.cend());
 	sort(indexes.begin(), indexes.end(), [&PValuesPos_salmon](int32_t a, int32_t b){return PValuesPos_salmon[a].Pvalue < PValuesPos_salmon[b].Pvalue;} );
 	reorder(copyPValuesPos_salmon, indexes);
-	cout << is_sorted(copyPValuesPos_salmon.cbegin(), copyPValuesPos_salmon.cend(), PRegion_t::CompPvalue) << endl;
+	assert( is_sorted(copyPValuesPos_salmon.cbegin(), copyPValuesPos_salmon.cend(), PRegion_t::CompPvalue) );
 	reorder(copyAdjPValuesPos_salmon, indexes);
 	// PValuesNeg_salmon
 	indexes.resize(PValuesNeg_salmon.size());
@@ -724,7 +1148,7 @@ vector<int32_t> LPReassign_t::RefineLPTrans(DistTest_t& dt,
 	vector<PRegion_t> copyAdjPValuesNeg_salmon(AdjPValuesNeg_salmon.cbegin(), AdjPValuesNeg_salmon.cend());
 	sort(indexes.begin(), indexes.end(), [&PValuesNeg_salmon](int32_t a, int32_t b){return PValuesNeg_salmon[a].Pvalue < PValuesNeg_salmon[b].Pvalue;} );
 	reorder(copyPValuesNeg_salmon, indexes);
-	cout << is_sorted(copyPValuesNeg_salmon.cbegin(), copyPValuesNeg_salmon.cend(), PRegion_t::CompPvalue) << endl;
+	assert( is_sorted(copyPValuesNeg_salmon.cbegin(), copyPValuesNeg_salmon.cend(), PRegion_t::CompPvalue) );
 	reorder(copyAdjPValuesNeg_salmon, indexes);
 	// PValuesPos_lp
 	indexes.resize(PValuesPos_lp.size());
@@ -733,7 +1157,7 @@ vector<int32_t> LPReassign_t::RefineLPTrans(DistTest_t& dt,
 	vector<PRegion_t> copyAdjPValuesPos_lp(AdjPValuesPos_lp.cbegin(), AdjPValuesPos_lp.cend());
 	sort(indexes.begin(), indexes.end(), [&PValuesPos_lp](int32_t a, int32_t b){return PValuesPos_lp[a].Pvalue < PValuesPos_lp[b].Pvalue;} );
 	reorder(copyPValuesPos_lp, indexes);
-	cout << is_sorted(copyPValuesPos_lp.cbegin(), copyPValuesPos_lp.cend(), PRegion_t::CompPvalue) << endl;
+	assert( is_sorted(copyPValuesPos_lp.cbegin(), copyPValuesPos_lp.cend(), PRegion_t::CompPvalue) );
 	reorder(copyAdjPValuesPos_lp, indexes);
 	// PValuesNeg_lp
 	indexes.resize(PValuesNeg_lp.size());
@@ -742,7 +1166,7 @@ vector<int32_t> LPReassign_t::RefineLPTrans(DistTest_t& dt,
 	vector<PRegion_t> copyAdjPValuesNeg_lp(AdjPValuesNeg_lp.cbegin(), AdjPValuesNeg_lp.cend());
 	sort(indexes.begin(), indexes.end(), [&PValuesNeg_lp](int32_t a, int32_t b){return PValuesNeg_lp[a].Pvalue < PValuesNeg_lp[b].Pvalue;} );
 	reorder(copyPValuesNeg_lp, indexes);
-	cout << is_sorted(copyPValuesNeg_lp.cbegin(), copyPValuesNeg_lp.cend(), PRegion_t::CompPvalue) << endl;
+	assert( is_sorted(copyPValuesNeg_lp.cbegin(), copyPValuesNeg_lp.cend(), PRegion_t::CompPvalue) );
 	reorder(copyAdjPValuesNeg_lp, indexes);
 
 	// refine for each gene

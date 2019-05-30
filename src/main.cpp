@@ -50,8 +50,24 @@ int32_t main (int32_t argc, char* argv[])
 
 		vector< vector<double> > Expected;
 		vector< vector<double> > Observed;
+		bool has_junction_file = false;
+		vector< vector<double> > junc_obs;
 		ReadCorrection(CorrectionFile, TransIndex, TransLength, Expected);
 		ReadStartpos(StartposFile, TransIndex, TransLength, Observed);
+		{
+			// read junction observed read count
+			string junction_filename = "";
+			size_t s1 = StartposFile.find_last_of("/");
+			size_t s2 = StartposFile.find_last_of(".");
+			if (s2 != string::npos && s2 > s1)
+				junction_filename = StartposFile.substr(0, s2) + "_junction" + StartposFile.substr(s2);
+			else
+				junction_filename = StartposFile + "_junction";
+			if (access( junction_filename.c_str(), F_OK ) != -1)
+				has_junction_file = true;
+			if (has_junction_file)
+				ReadStartpos(junction_filename, TransIndex, TransLength, junc_obs);
+		}
 
 		// sanity check
 		for (map<string,double>::const_iterator ittpm = TPM.cbegin(); ittpm != TPM.cend(); ittpm++){
@@ -134,6 +150,8 @@ int32_t main (int32_t argc, char* argv[])
 
 		// initial LP
 		LPReassign_t LP(TransIndex, TransGeneMap, GeneTransMap, Transcripts, Expected, Observed);
+		if (has_junction_file)
+			LP.InitializeJunction(Transcripts, junc_obs);
 		int32_t round = 1;
 		while (true) {
 			// LP adjustment

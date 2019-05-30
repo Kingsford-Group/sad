@@ -103,7 +103,7 @@ public:
 	static double CalDeletionScore_single(Eigen::VectorXd Dist1, Eigen::VectorXd Dist2, pair<int32_t,int32_t>& region, 
 		bool check1 = false, double numthresh = 20);
 	void PValue_regional(vector<PRegion_t>& PValuesPos, vector<PRegion_t>& PValuesNeg);
-	void PValue_regional(const vector<int32_t>& AdjustmentList, vector<PRegion_t>& PValuesPos, vector<PRegion_t>& PValuesNeg);
+	void PValue_regional(const vector<int32_t>& AdjustmentList, vector<PRegion_t>& PValuesPos, vector<PRegion_t>& PValuesNeg, bool print_time = true);
 	void PValue_overall_empirical(vector<double>& PValuesPos, vector<double>& PValuesNeg, vector<bool>& Choices);
 	void PValue_overall_empirical(const vector<int32_t>& AdjustmentList, vector<double>& PValuesPos, vector<double>& PValuesNeg, vector<bool>& Choices);
 
