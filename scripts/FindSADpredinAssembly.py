@@ -45,7 +45,10 @@ def ReadSADprediction_long(filename, pthresh=0.01):
 			continue
 		strs = line.strip().split("\t")
 		if float(strs[12]) < pthresh:
-			tmp = SADpred(strs[0], strs[14], float(strs[2]), [int(strs[3]), int(strs[4])], strs[13]=="1", float(strs[12]))
+			if len(strs) >= 15:
+				tmp = SADpred(strs[0], strs[14], float(strs[2]), [int(strs[3]), int(strs[4])], strs[13]=="1", float(strs[12]))
+			else:
+				tmp = SADpred(strs[0], "", float(strs[2]), [int(strs[3]), int(strs[4])], strs[13]=="1", float(strs[12]))
 			if tmp.IsOver:
 				tmp.Score = float(strs[7])
 				tmp.Region = [int(strs[8]), int(strs[9])]

@@ -211,7 +211,7 @@ void ProcessTmapFile(string tmapfile, vector<Transcript_t>& AsmTranscripts, cons
 		boost::split(strs, line, boost::is_any_of("\t"));
 		if (strs[2]!="u" && strs[2]!="r" && strs[2]!="=" && strs[2]!="s" && strs[2]!="i" && strs[1]!="-"){
 			Correspondence[strs[4]] = strs[1];
-			Cov[strs[4]] = stod(strs[7]);
+			Cov[strs[4]] = stod(strs[8]);
 		}
 		else if(strs[2]=="="){
 			map<string,int32_t>::const_iterator itmap = TransLength.find(strs[1]);
@@ -343,6 +343,28 @@ void WriteRanking(const map<string,string>& Correspondence, const map<string,dou
 };
 
 
+void WriteRanking_existingjunc(const map<string,string>& Correspondence, const map<string,double>& Cov, const map<string,bool>& MultiExonLabel, 
+	const map<string,bool>& NovelJunctionLabel, string outputfile)
+{
+	vector< pair<string,double> > VectorCov;
+	for (map<string,double>::const_iterator itmap = Cov.cbegin(); itmap != Cov.cend(); itmap++)
+		VectorCov.push_back( make_pair(itmap->first, itmap->second) );
+	sort(VectorCov.begin(), VectorCov.end(), [](pair<string,double> a, pair<string,double> b){return a.second > b.second;} );
+
+	ofstream output(outputfile);
+	output << "# RefTransID\tAssemblyCov\tAssemblyTransID\n";
+	for (vector< pair<string,double> >::iterator it = VectorCov.begin(); it != VectorCov.end(); it++){
+		map<string,string>::const_iterator itcorres = Correspondence.find(it->first);
+		map<string,bool>::const_iterator itmulti = MultiExonLabel.find(it->first);
+		map<string,bool>::const_iterator itnovel = NovelJunctionLabel.find(it->first);
+		if (itnovel->second)
+			continue;
+		output << (itcorres->second) << "\t" << (it->second) <<"\t" << (it->first) << endl;
+	}
+
+};
+
+
 int32_t main(int32_t argc, char* argv[])
 {
 	if (argc == 1)
@@ -357,6 +379,7 @@ int32_t main(int32_t argc, char* argv[])
 		vector<Transcript_t> AsmTranscripts;
 		ReadGTF(RefGTFfile, RefTranscripts);
 		ReadGTF(AsmGTFfile, AsmTranscripts);
+		cout << RefTranscripts.size() <<"\t"<< AsmTranscripts.size() << endl;
 
 		map<string,int32_t> RefTransLength;
 		CalculateTransLength(RefTranscripts, RefTransLength);
@@ -369,11 +392,13 @@ int32_t main(int32_t argc, char* argv[])
 
 		CollectJunction(RefTranscripts, RefJunctions);
 		ProcessTmapFile(TmapFile, AsmTranscripts, RefTransLength, Correspondence, Cov);
+		cout << "size of Correspondence = " << Correspondence.size() << endl;
 		UpdateAssemblyStrandInfo(AsmTranscripts, RefTranscripts, Correspondence);
 		LabelingMultiExon(AsmTranscripts, MultiExonLabel);
 		LabelingNovelJunction(AsmTranscripts, RefJunctions, NovelJunctionLabel);
 
 		WriteRanking(Correspondence, Cov, MultiExonLabel, NovelJunctionLabel, OutputPrefix+"_overall_novelisoforms.txt");
+		WriteRanking_existingjunc(Correspondence, Cov, MultiExonLabel, NovelJunctionLabel, OutputPrefix+"_existing_novelisoforms.txt");
 		WriteRanking(Correspondence, Cov, MultiExonLabel, NovelJunctionLabel, OutputPrefix+"_multiexon_novelisoforms.txt", true, false);
 		WriteRanking(Correspondence, Cov, MultiExonLabel, NovelJunctionLabel, OutputPrefix+"_noveljunc_novelisoforms.txt", false, true);
 	}
