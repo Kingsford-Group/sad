@@ -972,8 +972,9 @@ int32_t main(int32_t argc, char* argv[]){
 
 		if(atoi(argv[1])==0) {
 			string OutJunctionFile;
+			size_t pos_name = OutFile.find_last_of("/");
 			size_t suffixpos = OutFile.find_last_of(".");
-			if(suffixpos != string::npos)
+			if(suffixpos != string::npos && suffixpos > pos_name)
 				OutJunctionFile = OutFile.substr(0, suffixpos) + "_junction"+OutFile.substr(suffixpos);
 			else
 				OutJunctionFile = OutFile+"_junction";
@@ -982,8 +983,9 @@ int32_t main(int32_t argc, char* argv[]){
 		}
 		else if(atoi(argv[1])==1){
 			string OutBadFile;
+			size_t pos_name = OutFile.find_last_of("/");
 			size_t suffixpos = OutFile.find_last_of(".");
-			if(suffixpos != string::npos)
+			if(suffixpos != string::npos && suffixpos > pos_name)
 				OutBadFile = OutFile.substr(0, suffixpos) + "_bad"+OutFile.substr(suffixpos);
 			else
 				OutBadFile = OutFile+"_bad";

@@ -417,7 +417,8 @@ void LPReassign_t::InitializeJunction(const vector<Transcript_t>& Transcripts, c
 				if (count == pos_in_trans)
 					break;
 			}
-			assert(pos_in_gene > 0);
+			pos_in_gene++;
+			assert(pos_in_gene < PositionExistence[tid].size());
 			// convert to binned position
 			int32_t pos_in_bin = pos_in_gene / Bin_Size;
 			Eigen::VectorXi tmp = Eigen::VectorXi::Zero(obs_bin[0].size());
@@ -451,6 +452,8 @@ vector<double> LPReassign_t::Quantify_singlecase(Eigen::MatrixXd& exp, Eigen::Ve
 	// create GUROBI environment
 	GRBEnv env = GRBEnv();
 	GRBModel model = GRBModel(env);
+	// silence std out parameter
+	model.set(GRB_IntParam_OutputFlag, 0);
 	// add variables
 	vector<GRBVar> X;
 	vector<GRBVar> C;
@@ -770,9 +773,6 @@ vector<double> LPReassign_t::ReassignReads(vector< vector<double> >& newAssignme
 		for(int32_t i = 0; i < tids.size(); i++)
 			obs += ObservedBin[tids[i]];
 		// quantify
-		vector<double> alpha = Quantify_singlecase(exp, obs);
-
-		// test for Quantify_singlecase_junction
 		vector< Eigen::VectorXd > obs_junction_full = JunctionObserveFull[g];
 		vector< Eigen::VectorXd > obs_junction_bin = JunctionObserveBin[g];
 		// remove the junction reads from transcripts not involved in reassignment
@@ -799,8 +799,7 @@ vector<double> LPReassign_t::ReassignReads(vector< vector<double> >& newAssignme
 		vector< Eigen::VectorXi > existence;
 		for (int32_t i = 0; i < tids.size(); i++)
 			existence.push_back( JunctionExistence[tids[i]] );
-		vector<double> alpha2 = Quantify_singlecase_junction(exp, obs, relevance, obs_junction_bin, existence);
-		// end test
+		vector<double> alpha = Quantify_singlecase_junction(exp, obs, relevance, obs_junction_bin, existence);
 		// re-assign on base-pair level
 		Eigen::MatrixXd expfull(ExpectedFullNorm[tids[0]].size(), tids.size());
 		for(int32_t i = 0; i < tids.size(); i++)
@@ -808,7 +807,6 @@ vector<double> LPReassign_t::ReassignReads(vector< vector<double> >& newAssignme
 		Eigen::VectorXd obsfull = Eigen::VectorXd::Zero(ExpectedFullNorm[tids[0]].size());
 		for(int32_t i = 0; i < tids.size(); i++)
 			obsfull += ObservedFull[tids[i]];
-		// test for Quantify_singlecase_junction
 		for (int32_t i = 0; i < obs_junction_full.size(); i++)
 			obsfull -= obs_junction_full[i];
 		// sanity check that obsfull is non-negative
@@ -820,14 +818,14 @@ vector<double> LPReassign_t::ReassignReads(vector< vector<double> >& newAssignme
 		// reads that don't span junctions
 		Eigen::MatrixXd tmp_assign_full = Eigen::MatrixXd::Zero(expfull.rows(), expfull.cols());
 		for (int32_t i = 0; i < obsfull.size(); i++) {
-			Eigen::VectorXd tmpalpha = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(alpha2.data(), alpha2.size());
+			Eigen::VectorXd tmpalpha = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(alpha.data(), alpha.size());
 			Eigen::ArrayXd assign_theo = expfull.row(i).array().transpose() * tmpalpha.array();
 			if (assign_theo.sum() != 0)
 				tmp_assign_full.row(i) = obsfull(i) * assign_theo / (assign_theo.sum());
 		}
 		// junction reads
 		for (int32_t i = 0; i < obs_junction_full.size(); i++) {
-			Eigen::VectorXd tmpalpha = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(alpha2.data(), alpha2.size());
+			Eigen::VectorXd tmpalpha = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(alpha.data(), alpha.size());
 			Eigen::VectorXd this_exist = Eigen::VectorXd::Zero(expfull.cols());
 			for (int32_t k = 0; k < expfull.cols(); k++)
 				this_exist(k) = existence[k](i);
