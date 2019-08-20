@@ -18,7 +18,11 @@ For linux machine, the following script can be used to download and install the 
 ```
 
 ## Compiling SAD
-After obtaining the prerequisite libraries, SAD can be compiled by
+After obtaining the prerequisite libraries, update pkg-config path to include the directory where the pkg-config files of dependencies are installed. If you install the dependencies using `install.sh` script, the pkg-config path can be updated by running the following command in shell:
+```
+export PKG_CONFIG_PATH=<path to the installation directory>/external/pkgconfig:${PKG_CONFIG_PATH}
+```
+SAD can be compiled by
 ```
 cd sad/
 make
