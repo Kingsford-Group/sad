@@ -68,3 +68,8 @@ cd ${Dir}/external
 mkdir spline
 cd spline
 wget https://kluge.in-chemnitz.de/opensource/spline/spline.h
+
+# moving all pkg-config files into one folder
+cd ${Dir}
+mkdir -p ${Dir}/external/pkgconfig
+cp -n $(find ${Dir}/external/ -name *.pc) ${Dir}/external/pkgconfig/
