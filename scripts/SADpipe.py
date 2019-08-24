@@ -122,11 +122,12 @@ if __name__=="__main__":
 			if not Path(OutPrefix + "_unadjustable_pvalue.tsv").exists():
 				print("DETECTING ANOMALIES USING SAD...")
 				# creating output directory
-				p = subprocess.Popen("mkdir -p {}".format("/".join(OutPrefix.split("/")[:-1])), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				out, err = p.communicate()
-				if err != b'':
-					print(err)
-					sys.exit()
+				if len(OutPrefix.split("/")[:-1]) > 0:
+					p = subprocess.Popen("mkdir -p {}".format("/".join(OutPrefix.split("/")[:-1])), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+					out, err = p.communicate()
+					if err != b'':
+						print(err)
+						sys.exit()
 				# running SAD
 				quant_file = SalmonDir + "/quant.sf"
 				correction_file = SalmonDir + "/correction.dat"
@@ -160,11 +161,12 @@ if __name__=="__main__":
 			if not Path(OutPrefix + "_unadjustable_pvalue.tsv").exists():
 				print("DETECTING ANOMALIES USING SAD...")
 				# creating output directory
-				p = subprocess.Popen("mkdir -p {}".format("/".join(OutPrefix.split("/")[:-1])), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				out, err = p.communicate()
-				if err != b'':
-					print(err)
-					sys.exit()
+				if len(OutPrefix.split("/")[:-1]) > 0:
+					p = subprocess.Popen("mkdir -p {}".format("/".join(OutPrefix.split("/")[:-1])), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+					out, err = p.communicate()
+					if err != b'':
+						print(err)
+						sys.exit()
 				# running SAD
 				quant_file = RSEMPrefix + ".isoforms.results"
 				correction_file = RSEMFolder + "/correction.dat"
