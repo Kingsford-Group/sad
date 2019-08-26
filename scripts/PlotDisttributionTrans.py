@@ -114,7 +114,7 @@ def ReadRawStartPos(filename):
 def ReadLPAdjustment(prefix):
 	# read the names of adjusted transcripts in order
 	AdjustmentList = []
-	fp = open(prefix, 'r')
+	fp = open(prefix + "_quantification.tsv", 'r')
 	for line in fp:
 		if line[0] == '#':
 			continue
@@ -123,7 +123,7 @@ def ReadLPAdjustment(prefix):
 	fp.close()
 	# read the binary file of adjusted observed
 	AdjObserved = {}
-	fp = open(prefix+"_dist", 'rb')
+	fp = open(prefix+"_observed_distribution.dat", 'rb')
 	numtrans=struct.unpack('i', fp.read(4))[0]
 	for i in range(numtrans):
 		namelen=struct.unpack('i', fp.read(4))[0]
