@@ -129,7 +129,116 @@ DistTest_t::DistTest_t(const map<string,int32_t>& _TransIndex, const map<string,
 DistTest_t::DistTest_t(const map<string,int32_t>& _TransIndex, const map<string,int32_t>& _TransLength, 
 	const vector< vector<double> >& Expected, const vector< vector<double> >& Observed, int32_t _Num_Threads)
 {
-	DistTest_t(_TransIndex, _TransLength, Expected, Observed);
+	TransIndex = _TransIndex;
+	percentile = {0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99, 1};
+	TransLength.resize(TransIndex.size(), 0);
+	for (map<string,int32_t>::const_iterator it = TransIndex.cbegin(); it != TransIndex.cend(); it++){
+		map<string,int32_t>::const_iterator itlen = _TransLength.find(it->first);
+		assert(itlen != _TransLength.cend());
+		TransLength[it->second] = itlen->second;
+		assert(itlen->second == Expected[it->second].size());
+	}
+	TransNames.resize(TransIndex.size(), "");
+	for (map<string,int32_t>::const_iterator it = TransIndex.cbegin(); it != TransIndex.cend(); it++)
+		TransNames[ it->second ] = it->first;
+	TransCov.clear();
+	// sanity check
+	for (int32_t i = 0; i < TransIndex.size(); i++){
+		assert(TransNames[i] != "");
+		assert(TransLength[i] > 0);
+	}
+	// calculate lenBounds and nBins
+	lenBounds.clear();
+	nBins.clear();
+	vector<int32_t> sortedTransLength(TransLength.begin(), TransLength.end());
+	sort(sortedTransLength.begin(), sortedTransLength.end());
+	for (int32_t i = 0; i < percentile.size(); i++) {
+		// lenBounds is the largest length of each group
+		int32_t ind = sortedTransLength.size()*percentile[i] - 1;
+		lenBounds.push_back(sortedTransLength[ind]);
+		// binning size is calculated based on middle length of each group
+		double midper = percentile[i]/2;
+		if (i != 0)
+			midper = (percentile[i-1]+percentile[i])/2;
+		int32_t ind_mid = sortedTransLength.size()*midper;
+		nBins.push_back(int32_t(round(1.0*sortedTransLength[ind_mid]/25)));
+		if (nBins.back() == 0)
+			nBins.back() = 1;
+	}
+	// binning and normalizeing Expected and Observed
+	ExpectedBinNorm.clear();
+	ObservedBinNorm.clear();
+	LenClass.clear();
+	assert(Expected.size() == Observed.size());
+	double tmpmin = 1;
+	for (int32_t i = 0; i < Expected.size(); i++) {
+		// identify len_class
+		assert(Expected[i].size() == Observed[i].size());
+		int32_t length = Expected[i].size();
+		vector<int32_t>::iterator ub = upper_bound(lenBounds.begin(), lenBounds.end(), length, [](int a, int b){return a<=b;} ); // XXX whether upper_bound is ccorrect?
+		int32_t len_class = distance(lenBounds.begin(), ub);
+		// binsize based on corresponding len_class and nBins
+		vector<double> tmpexp(nBins[len_class], 0);
+		vector<double> tmpobs(nBins[len_class], 0);
+		int32_t current_bin = 0;
+		double current_bin_end = 1.0*(current_bin+1)*length/nBins[len_class];
+		for (int32_t j = 0; j < Expected[i].size(); j++){
+			if (j > current_bin_end){
+				current_bin++;
+				current_bin_end = 1.0*(current_bin+1)*length/nBins[len_class];
+				assert(current_bin < nBins[len_class]);
+			}
+			tmpexp[current_bin] += Expected[i][j];
+			tmpobs[current_bin] += Observed[i][j];
+		}
+		// normalize
+		double sumexp = 0;
+		double sumobs = 0;
+		for (int32_t j = 0; j < tmpexp.size(); j++){
+			sumexp += tmpexp[j];
+			sumobs += tmpobs[j];
+		}
+		if (sumexp > 0){
+			for (int32_t j = 0; j < tmpexp.size(); j++)
+				tmpexp[j] /= sumexp;
+		}
+		if (sumobs > 0){
+			for (int32_t j = 0; j < tmpobs.size(); j++)
+				tmpobs[j] /= sumobs;
+		}
+		// push back
+		Eigen::VectorXd tmpexp_eigen = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(tmpexp.data(), tmpexp.size());
+		Eigen::VectorXd tmpobs_eigen = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(tmpobs.data(), tmpobs.size());
+		ExpectedBinNorm.push_back(tmpexp_eigen);
+		ObservedBinNorm.push_back(tmpobs_eigen);
+		LenClass.push_back(len_class);
+		TransCov.push_back(sumobs / TransLength[i]);
+
+		if (sumobs < 1e-6 && sumobs > 0 && sumobs < tmpmin)
+			tmpmin = sumobs;
+	}
+	assert(ExpectedBinNorm.size() == LenClass.size() && ObservedBinNorm.size() == LenClass.size());
+
+	// initialize Sampling_NSTDS
+	Sampling_NSTDS.clear();
+	for (int32_t i = -25; i < -15; i+=2)
+		Sampling_NSTDS.push_back(1.0*i/10);
+	for (int32_t i = -15; i < 15; i++)
+		Sampling_NSTDS.push_back(1.0*i/10);
+	for (int32_t i = 15; i < 26; i+=2)
+		Sampling_NSTDS.push_back(1.0*i/10);
+	// initialize Sampling_WEIGHTS
+	Sampling_WEIGHTS.clear();
+	boost::math::normal s;
+	double sumweights = 0;
+	for(int32_t i = 0; i < Sampling_NSTDS.size(); i++){
+		Sampling_WEIGHTS.push_back( boost::math::pdf(s, Sampling_NSTDS[i]) );
+		sumweights += Sampling_WEIGHTS.back();
+	}
+	for(int32_t i = 0; i < Sampling_WEIGHTS.size(); i++)
+		Sampling_WEIGHTS[i] /= sumweights;
+
+	// set default number of threads
 	Num_Threads = _Num_Threads;
 };
 

@@ -16,7 +16,7 @@ double PvalueThresh=0.1;
 int32_t main (int32_t argc, char* argv[])
 {
 	if (argc==1){
-		printf("SAD <mode: 0 for Salmon, 1 for RSEM> <GTFfile> <QuantFile> <CorrectionFile> <StartposFile> <OutputPrefix>\n");
+		printf("SAD <mode: 0 for Salmon, 1 for RSEM> <GTFfile> <QuantFile> <CorrectionFile> <StartposFile> <OutputPrefix> (number_threads)\n");
 	}
 	else{
 		string mode(argv[1]);
@@ -27,6 +27,9 @@ int32_t main (int32_t argc, char* argv[])
 		string CorrectionFile(argv[4]);
 		string StartposFile(argv[5]);
 		string OutputPrefix(argv[6]);
+		int32_t num_threads = 8;
+		if (argc > 7)
+			num_threads = atoi(argv[7]);
 
 		map<string,double> ExpMap;
 		vector<double> Exp;
@@ -80,7 +83,7 @@ int32_t main (int32_t argc, char* argv[])
 				cout << (ittpm->first) <<"\t"<< (ittpm->second) <<"\t"<< (itidx->second) <<"\t"<< sumreads <<"\t"<< (Observed[itidx->second].size()) <<"\n";
 		}
 
-		DistTest_t dt(TransIndex, TransLength, Expected, Observed);
+		DistTest_t dt(TransIndex, TransLength, Expected, Observed, num_threads);
 		dt.AdjustExpected();
 		dt.CalDeletionScore();
 
@@ -236,7 +239,7 @@ int32_t main (int32_t argc, char* argv[])
 		}
 
 		// calculate overlap p value
-		dt.Num_Threads = 8;
+		dt.Num_Threads = num_threads;
 		vector<double> PValuesPos;
 		vector<double> PValuesNeg;
 		vector<bool> Choices;

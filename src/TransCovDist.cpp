@@ -931,23 +931,20 @@ int32_t ReadSalmonFragLen(string bamfile, const vector<string>& LowQualReadNames
 
 int32_t main(int32_t argc, char* argv[]){
 	if(argc==1){
-		printf("transcovdist <mode> <gtffile> <quantfile> <eqfile> <bamfile> <outfile> (--fld <FLDfile if mode 2>\n");
-		printf("\tmode 0: all salmon mapped reads\n");
-		printf("\tmode 1: single-end mapped redas by salmon\n");
-		printf("\tmode 2: fragment length mean and std\n");
+		printf("transcovdist <gtffile> <quantfile> <eqfile> <bamfile> <outfile>\n");
 	}
 	else{
-		string GTFfile(argv[2]);
-		string QuantFile(argv[3]);
-		string EqFile(argv[4]);
-		string BamFile(argv[5]);
-		string OutFile(argv[6]);
+		string GTFfile(argv[1]);
+		string QuantFile(argv[2]);
+		string EqFile(argv[3]);
+		string BamFile(argv[4]);
+		string OutFile(argv[5]);
 
-		string FLDfile="";
-		for(int32_t i=7; i<argc; i+=2){
+		/*string FLDfile="";
+		for(int32_t i=6; i<argc; i+=2){
 			if(string(argv[i])=="--fld")
 				FLDfile=string(argv[i+1]);
-		}
+		}*/
 
 		map<string, Transcript_t> transcripts;
 		ReadGTF(GTFfile, transcripts);
@@ -970,7 +967,7 @@ int32_t main(int32_t argc, char* argv[]){
 		/*GetEqTrans(EqFile, Trans, TransNames, EqTransID);
 		GetSalmonWeightAssign(AssignFile, WeightAssign);*/
 
-		if(atoi(argv[1])==0) {
+		//if(atoi(argv[1])==0) {
 			string OutJunctionFile;
 			size_t pos_name = OutFile.find_last_of("/");
 			size_t suffixpos = OutFile.find_last_of(".");
@@ -980,8 +977,8 @@ int32_t main(int32_t argc, char* argv[]){
 				OutJunctionFile = OutFile+"_junction";
 			ofstream ss_junction(OutJunctionFile, ios::out | ios::binary);
 			ReadBAMStartPos(BamFile, LowQualReadNames, Trans, EqTransID, TransLength, WeightAssign, transcripts, ss, ss_junction);
-		}
-		else if(atoi(argv[1])==1){
+		//}
+		/*else if(atoi(argv[1])==1){
 			string OutBadFile;
 			size_t pos_name = OutFile.find_last_of("/");
 			size_t suffixpos = OutFile.find_last_of(".");
@@ -997,7 +994,7 @@ int32_t main(int32_t argc, char* argv[]){
 			vector<double> FLD;
 			ReadProcessFLD(FLDfile, FLD);
 			ReadSalmonFragLen(BamFile, LowQualReadNames, FLD, Trans, EqTransID, TransLength, WeightAssign, ss);
-		}
+		}*/
 		ss.close();
 	}
 }

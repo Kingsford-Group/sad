@@ -84,12 +84,16 @@ Two files are the main outputs of SAD, corresponding to the p-value of unadjusta
 
 ## Specification of individual executable
 ### Retrieve the expected coverage distribution
-After compiling SAD, bin/readsalmonbias is the executable of retrieving the expected distribution for each transcript using Salmon bias correction model. To run the executable
+After compiling SAD, bin/readsalmonbias is the executable of retrieving the expected distribution for each transcript using Salmon bias correction model. The `--gcBias`, `--seqBias`, `--posBias` options in Salmon infer the corresponding bias models. bin/readrsembias is the executable of retrieving the expected distribution under RSEM bias correction model. The `--estimate-rspd` option in RSEM allows it to estimate a positional bias. For both executables, the order of the input arguments matters. To run the executables, using
 ```
 bin/readsalmonbias correction <salmon aux folder path> <transcriptome.fa> <salmon quant.sf> <output file> (number_threads)
 ```
+or for RSEM,  locate the .model file under .stat folder and run
+```
+bin/readrsembias correction <rsem .model file> <transcriptome.fa> <output file>
+```
 
-The output is a binary file that contains:
+The output is a binary file of the below content. If you want to use SAD for other quantifiers, outputing an expected coverage distribution file by a custom script is needed.
 
 	- the number of transcripts (int32_t)
 	- for each transcript:
@@ -99,12 +103,16 @@ The output is a binary file that contains:
 		- expected coverage distribution (double * length of sequence)
 
 ### Retrieve the observed coverage distribution
-bin/transcovdist is the executable of retrieving the observed distribution for each transcript using the mapping-to-transcriptome BAM file. With --writeMappings option, Salmon will output a SAM file of the read mapping, and can be converted to BAM using samtools.
+bin/transcovdist is the executable of retrieving from Salmon the observed distribution for each transcript using the mapping-to-transcriptome BAM file. With --writeMappings option, Salmon will output a SAM file of the read mapping, and can be converted to BAM using samtools. bin/rsemobs is the exectuable of retrieving from RSEM the observed distribution. For both executables, the order of the input arguments matters. To run the executables, using
 ```
-bin/transcovdist 0 <salmon quant.sf> <salmon eq_classes.txt> <salmon mapping.bam> <output file> 
+bin/transcovdist <annotation gtf file> <salmon quant.sf> <salmon eq_classes.txt> <salmon mapping.bam> <output file> 
+```
+or
+```
+bin/rsemobs <annotation gtf file> <RSEM mapping bam file> <output file>
 ```
 
-The output is a binary file in the following structure:
+The output is a binary file of below content. For other quantifiers, a custom script is required to output the observed coverage in the following structure in order to apply SAD.
 
 	- the number of transcripts (int32_t)
 	- for each transcript:
@@ -117,6 +125,6 @@ The output is a binary file in the following structure:
 ### Detect and categorize anomalies
 bin/SAD is the main method for anomaly detection. It can be executed with the following command:
 ```
-bin/SAD <annotation.gtf> <salmon quant.sf> <expected distribution> <observed distribution> <output prefix>
+bin/SAD <annotation.gtf> <salmon quant.sf> <expected distribution> <observed distribution> <output prefix> (number_threads)
 ```
-Please refer to the SAD output for the output specification for this executable.
+Note that the order of the input arguments matters.Please refer to the SAD output for the output specification for this executable.
