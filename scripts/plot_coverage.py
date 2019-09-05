@@ -35,6 +35,10 @@ if __name__ == "__main__":
 		AdjObserved = ReadLPAdjustment(SADPrefix + "_adjusted")
 		[Covariances, LenClass] = ReadCovariance(CovarianceFile)
 		Transcripts = ReadGTF(GTFFile)
+		# for the transcripts excluded from the adjustment, make the adjusted observed distribution the same as the original.
+		for k,v in Observed.items():
+			if not (k in AdjObserved):
+				AdjObserved[k] = v
 		
 		# determine whether to plot one transcript or two
 		if not (":" in tids):
@@ -42,10 +46,10 @@ if __name__ == "__main__":
 			if np.sum(np.abs(Observed[t] - AdjObserved[t])) < 1e-8:
 				print("Observed coverage of transcript "+t+" has not been adjusted.")
 			fig, ((ax1, ax3), (ax2, ax4)) = plt.subplots(2, 2, sharex='col', figsize=(16, 6.5))
-			ax1 = PlotDist_ribbon_v2(ax1, Expected[t], Observed[t], Covariances1[LenClass1[t]], "unadjusted expected, unadjusted observed: "+t, legend_bottom=None, coordinate="transcript")
-			ax2 = PlotDist_ribbon_v2(ax2, AdjExpected[t], Observed[t], Covariances1[LenClass1[t]], "adjusted expected, unadjusted observed: "+t, legend_bottom=True, coordinate="transcript")
-			ax3 = PlotDist_ribbon_v2(ax3, Expected[t], AdjObserved[t], Covariances1[LenClass1[t]], "unadjusted expected, adjusted observed: "+t, legend_bottom=None, coordinate="transcript")
-			ax4 = PlotDist_ribbon_v2(ax4, AdjExpected[t], AdjObserved[t], Covariances1[LenClass1[t]], "adjusted expected, adjusted observed: "+t, legend_bottom=True, coordinate="transcript")
+			ax1 = PlotDist_ribbon_v2(ax1, Expected[t], Observed[t], Covariances[LenClass[t]], "unadjusted expected, unadjusted observed: "+t, legend_bottom=None, coordinate="transcript")
+			ax2 = PlotDist_ribbon_v2(ax2, AdjExpected[t], Observed[t], Covariances[LenClass[t]], "adjusted expected, unadjusted observed: "+t, legend_bottom=True, coordinate="transcript")
+			ax3 = PlotDist_ribbon_v2(ax3, Expected[t], AdjObserved[t], Covariances[LenClass[t]], "unadjusted expected, adjusted observed: "+t, legend_bottom=None, coordinate="transcript")
+			ax4 = PlotDist_ribbon_v2(ax4, AdjExpected[t], AdjObserved[t], Covariances[LenClass[t]], "adjusted expected, adjusted observed: "+t, legend_bottom=True, coordinate="transcript")
 			fig.subplots_adjust(left=0.05, right=0.975, hspace=0.3, bottom = 0.15)
 			fig.savefig(OutputFile, transparent=True)
 		else:
