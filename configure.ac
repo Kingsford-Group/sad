@@ -1,0 +1,26 @@
+AC_INIT([sad], [0.0.1], [gmarcais@oceangenomics.com])
+AC_CANONICAL_HOST
+AC_CONFIG_MACRO_DIR([m4])
+AM_INIT_AUTOMAKE([subdir-objects foreign parallel-tests color-tests])
+AM_SILENT_RULES([yes])
+AC_CONFIG_SRCDIR([src])
+AC_CONFIG_HEADERS([config.h])
+AC_PROG_LIBTOOL
+AC_LIB_RPATH
+PKG_PROG_PKG_CONFIG
+
+# Change default compilation flags
+AC_LANG(C++)
+AC_PROG_CXX
+
+BOOST_REQUIRE
+BOOST_STATIC
+BOOST_STRING_ALGO
+BOOST_IOSTREAMS([])
+
+PKG_CHECK_MODULES([EIGEN], [eigen3])
+PKG_CHECK_MODULES([JELLYFISH], [jellyfish-2.0])
+PKG_CHECK_MODULES([HTSLIB], [htslib])
+
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
