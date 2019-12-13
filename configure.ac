@@ -19,10 +19,14 @@ BOOST_STATIC
 BOOST_STRING_ALGO
 BOOST_IOSTREAMS
 
-# Gurobi
+# LP solvers
 GUROBI_CHECK
+PKG_CHECK_MODULES([CLP], [clp],
+                  [HAVE_CLP=1]
+                  [AC_DEFINE([HAVE_CLP], [1], [COIN-OR LP solver available])]   ,
+                  [HAVE_CLP=])
 
-AS_IF([test x$HAVE_GUROBI = x -a x$HAVE_COINOR = x],
+AS_IF([test x$HAVE_GUROBI = x -a x$HAVE_CLP = x],
       [AC_MSG_FAILURE("No supported LP solver was found. Please install Gurobi or Coin-OR")])
 
 # Other dependencies
