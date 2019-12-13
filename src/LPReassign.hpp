@@ -17,8 +17,6 @@ See LICENSE for licensing.
 #include "Eigen/Dense"
 #include "boost/math/distributions/binomial.hpp"
 #include "boost/math/distributions/normal.hpp"
-#include "gurobi_c++.h"
-// #include "glpk.h"
 
 using namespace std;
 

@@ -13,6 +13,15 @@ See LICENSE for licensing.
 #include "config.h"
 #endif
 
+#ifdef HAVE_GUROBI
+#include <gurobi_c++.h>
+#endif
+
+#ifdef HAVE_CLP
+#include <ClpSimplex.hpp>
+#endif
+
+
 using namespace std;
 
 template <class T>
@@ -515,9 +524,60 @@ vector<double> Quantify_singlecase_grb(Eigen::MatrixXd& exp, Eigen::VectorXd& ob
 };
 #endif
 
+// Create a default LP formatted file
+std::string Quantify_singlecase_LP(Eigen::MatrixXd& exp, Eigen::VectorXd& obs) {
+  static const std::string path("quantify_singlecase.lp"); // XXX Should be a temp file!
+  std::ofstream LP(path);
+  if(!LP.good())
+    throw std::runtime_error("Failed to create LP file");
+
+  LP << "Minimize\n"
+     << "obj: ";
+  for(int i = 0; i < exp.rows(); ++i)
+    LP << (i > 0 ? " + " : "") << 'c' << i;
+  LP << '\n';
+
+  LP << "Subject To\n";
+  for(int i = 0; i < exp.rows(); ++i) {
+    LP << "const" << i << ": -c" << i;
+    for(int j = 0; j < exp.cols(); ++j) {
+      const auto sign = exp(i, j) >= 0 ? " + " : " - ";
+      LP << sign << std::abs(exp(i, j)) << "x" << j;
+    }
+    LP << " <= " << obs(i) << '\n';
+  }
+
+  for(int i = 0; i < exp.rows(); ++i) {
+    LP << "const" << (i + exp.rows()) << ": -c" << i;
+    for(int j = 0; j < exp.cols(); ++j) {
+      const auto sign = -exp(i, j) >= 0 ? " + " : " - ";
+      LP << sign << std::abs(exp(i, j)) << "x" << j;
+    }
+    LP << " <= " << -obs(i) << '\n';
+  }
+  LP << "Bounds\n";
+  const auto sum = obs.sum();
+  for(int i = 0; i < exp.cols(); ++i)
+    LP << 0 << " <= x" << i << " <= " << sum << '\n';
+  for(int i = 0; i < exp.rows(); ++i)
+    LP << 0 << " <= c" << i << " <= " << sum << '\n';
+
+  LP << "General\n";
+  for(int i = 0; i < exp.cols(); ++i)
+    LP << 'x' << i << '\n';
+  for(int i = 0; i < exp.rows(); ++i)
+    LP << 'c' << i << '\n';
+  LP << "End\n";
+
+  return path;
+}
+
 #ifdef HAVE_CLP
 vector<double> Quantify_singlecase_clp(Eigen::MatrixXd& exp, Eigen::VectorXd& obs) {
-  throw std::runtime_error("CLP not yet implemented");
+  assert(exp.rows() == obs.size());
+  const auto path = Quantify_singlecase_LP(exp, obs);
+  // create CLP environment
+  ClpSimplex model;
 }
 #endif
 

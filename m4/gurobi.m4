@@ -13,7 +13,7 @@ AS_IF([test "x$with_gurobi" != x],
       [GUROBI=$with_gurobi]
       [GUROBI_CFLAGS="-I$GUROBI/include"]
       [GUROBI_LIB=`ls $GUROBI/lib/libgurobi@<:@0-9@:>@@<:@0-9@:>@.so | tail -n 1 | xargs basename -s .so | cut -b 4-`]
-      [GUROBI_LIBS="-L$GUROBI/lib -l$GUROBI_LIB"])
+      [GUROBI_LIBS="-L$GUROBI/lib -lgurobi_g++5.2 -l$GUROBI_LIB"])
 
 AC_LANG_PUSH([C++])
 SAVE_LIBS="$LIBS"
