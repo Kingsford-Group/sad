@@ -1,4 +1,4 @@
-#!/bin/bash
+#!@PYTHON3@
 
 import sys
 import subprocess
@@ -13,6 +13,8 @@ from pathlib import Path
 # 		- aux/
 # 	- output folder
 
+
+codedir = "@BIN_DIR@"
 
 def ParseArgument(arguments):
 	Mode = 0
@@ -73,9 +75,6 @@ if __name__=="__main__":
 		print("\tmode 0: for Salmon quantifier (default)")
 		print("\tmode 1: for RSEM quantifier")
 	else:
-		codedir = "/".join(sys.argv[0].split("/")[:-1])
-		if codedir == "":
-			codedir = "."
 		Mode, TranscriptFasta, GTFfile, SalmonDir, RSEMPrefix, OutPrefix = ParseArgument(sys.argv)
 
 		if Mode == 0:
@@ -89,7 +88,7 @@ if __name__=="__main__":
 				aux_dir = SalmonDir + "/aux_info"
 				quant_file = SalmonDir + "/quant.sf"
 				output_file = SalmonDir + "/correction.dat"
-				p = subprocess.Popen("{}/../bin/readsalmonbias correction {} {} {} {}".format(codedir, aux_dir, TranscriptFasta, quant_file, output_file), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+				p = subprocess.Popen("{}/readsalmonbias correction {} {} {} {}".format(codedir, aux_dir, TranscriptFasta, quant_file, output_file), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 				out, err = p.communicate()
 				if err != b'':
 					print(err)
@@ -112,7 +111,7 @@ if __name__=="__main__":
 				eq_file = SalmonDir + "/aux_info/eq_classes.txt"
 				bam_file = SalmonDir + "/mapping.bam"
 				output_file = SalmonDir + "/startpos.dat"
-				p = subprocess.Popen("{}/../bin/transcovdist 0 {} {} {} {} {}".format(codedir, GTFfile, quant_file, eq_file, bam_file, output_file), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+				p = subprocess.Popen("{}/transcovdist 0 {} {} {} {} {}".format(codedir, GTFfile, quant_file, eq_file, bam_file, output_file), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 				out, err = p.communicate()
 				if err != b'':
 					print(err)
@@ -132,7 +131,7 @@ if __name__=="__main__":
 				quant_file = SalmonDir + "/quant.sf"
 				correction_file = SalmonDir + "/correction.dat"
 				startpos_file = SalmonDir + "/startpos.dat"
-				p = subprocess.Popen("{}/../bin/SAD 0 {} {} {} {} {}".format(codedir, GTFfile, quant_file, correction_file, startpos_file, OutPrefix), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+				p = subprocess.Popen("{}/SAD 0 {} {} {} {} {}".format(codedir, GTFfile, quant_file, correction_file, startpos_file, OutPrefix), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 				out, err = p.communicate()
 				if err != b'':
 					print(err)
@@ -142,7 +141,7 @@ if __name__=="__main__":
 			# processing bias correction for RSEM
 			if not Path(RSEMFolder + "/correction.dat").exists():
 				print("PROCESSING EXPECTED COVERAGE DISTRIBUTION...")
-				p = subprocess.Popen("{}/../bin/readrsembias correction {} {} {}".format(codedir, RSEMPrefix + ".model", TranscriptFasta, RSEMFolder + "/correction.dat"))
+				p = subprocess.Popen("{}/readrsembias correction {} {} {}".format(codedir, RSEMPrefix + ".model", TranscriptFasta, RSEMFolder + "/correction.dat"))
 				out, err = p.communicate()
 				if err != b'':
 					print(err)
@@ -151,7 +150,7 @@ if __name__=="__main__":
 			# processing observed distribution
 			if not Path(RSEMFolder + "/startpos.dat").exists():
 				print("PROCESSING OBSERVED COVERAGE DISTRIBUTION...")
-				p = subprocess.Popen("{}/../bin/rsemobs {} {}".format(codedir, RSEMPrefix + ".transcript.bam", RSEMFolder + "/startpos.dat"))
+				p = subprocess.Popen("{}/rsemobs {} {}".format(codedir, RSEMPrefix + ".transcript.bam", RSEMFolder + "/startpos.dat"))
 				out, err = p.communicate()
 				if err != b'':
 					print(err)
@@ -171,7 +170,7 @@ if __name__=="__main__":
 				quant_file = RSEMPrefix + ".isoforms.results"
 				correction_file = RSEMFolder + "/correction.dat"
 				startpos_file = RSEMFolder + "/startpos.dat"
-				p = subprocess.Popen("{}/../bin/SAD 1 {} {} {} {} {}".format(codedir, GTFfile, quant_file, correction_file, startpos_file, OutPrefix), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+				p = subprocess.Popen("{}/SAD 1 {} {} {} {} {}".format(codedir, GTFfile, quant_file, correction_file, startpos_file, OutPrefix), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 				out, err = p.communicate()
 				if err != b'':
 					print(err)

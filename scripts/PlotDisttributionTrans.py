@@ -1,4 +1,4 @@
-#!/bin/python
+#!@PYTHON3@
 
 import sys
 import struct

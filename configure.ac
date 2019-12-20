@@ -29,6 +29,9 @@ PKG_CHECK_MODULES([CLP], [clp],
 AS_IF([test x$HAVE_GUROBI = x -a x$HAVE_CLP = x],
       [AC_MSG_FAILURE("No supported LP solver was found. Please install Gurobi or Coin-OR")])
 
+# Python3
+PYTHON3_CHECK
+
 # Other dependencies
 PKG_CHECK_MODULES([EIGEN], [eigen3])
 PKG_CHECK_MODULES([JELLYFISH], [jellyfish-2.0])
