@@ -3,10 +3,24 @@ Part of Salmon Anomaly Detection
 (c) 2019 by  Cong Ma, Carl Kingsford, and Carnegie Mellon University.
 See LICENSE for licensing.
 */
+#include <stdexcept>
 
 #include "LPReassign.hpp"
 #include "Transcript.hpp"
 #include "DistTest.hpp"
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_GUROBI
+#include <gurobi_c++.h>
+#endif
+
+#ifdef HAVE_CLP
+#include <ClpSimplex.hpp>
+#endif
+
 
 using namespace std;
 
@@ -446,7 +460,8 @@ LPReassign_t::LPReassign_t(const map<string,int32_t>& _TransIndex, const map<str
 };
 
 //****************** test *********************
-vector<double> LPReassign_t::Quantify_singlecase(Eigen::MatrixXd& exp, Eigen::VectorXd& obs)
+#ifdef HAVE_GUROBI
+vector<double> Quantify_singlecase_grb(Eigen::MatrixXd& exp, Eigen::VectorXd& obs)
 {
 	assert(exp.rows() == obs.size());
 	// create GUROBI environment
@@ -507,9 +522,77 @@ vector<double> LPReassign_t::Quantify_singlecase(Eigen::MatrixXd& exp, Eigen::Ve
 	}
 	return alpha;
 };
+#endif
 
+// Create a default LP formatted file
+std::string Quantify_singlecase_LP(Eigen::MatrixXd& exp, Eigen::VectorXd& obs) {
+  static const std::string path("quantify_singlecase.lp"); // XXX Should be a temp file!
+  std::ofstream LP(path);
+  if(!LP.good())
+    throw std::runtime_error("Failed to create LP file");
 
-vector<double> LPReassign_t::Quantify_singlecase_junction(Eigen::MatrixXd& exp, Eigen::VectorXd& obs, const vector< Eigen::VectorXi >& relevance, 
+  LP << "Minimize\n"
+     << "obj: ";
+  for(int i = 0; i < exp.rows(); ++i)
+    LP << (i > 0 ? " + " : "") << 'c' << i;
+  LP << '\n';
+
+  LP << "Subject To\n";
+  for(int i = 0; i < exp.rows(); ++i) {
+    LP << "const" << i << ": -c" << i;
+    for(int j = 0; j < exp.cols(); ++j) {
+      const auto sign = exp(i, j) >= 0 ? " + " : " - ";
+      LP << sign << std::abs(exp(i, j)) << "x" << j;
+    }
+    LP << " <= " << obs(i) << '\n';
+  }
+
+  for(int i = 0; i < exp.rows(); ++i) {
+    LP << "const" << (i + exp.rows()) << ": -c" << i;
+    for(int j = 0; j < exp.cols(); ++j) {
+      const auto sign = -exp(i, j) >= 0 ? " + " : " - ";
+      LP << sign << std::abs(exp(i, j)) << "x" << j;
+    }
+    LP << " <= " << -obs(i) << '\n';
+  }
+  LP << "Bounds\n";
+  const auto sum = obs.sum();
+  for(int i = 0; i < exp.cols(); ++i)
+    LP << 0 << " <= x" << i << " <= " << sum << '\n';
+  for(int i = 0; i < exp.rows(); ++i)
+    LP << 0 << " <= c" << i << " <= " << sum << '\n';
+
+  LP << "General\n";
+  for(int i = 0; i < exp.cols(); ++i)
+    LP << 'x' << i << '\n';
+  for(int i = 0; i < exp.rows(); ++i)
+    LP << 'c' << i << '\n';
+  LP << "End\n";
+
+  return path;
+}
+
+#ifdef HAVE_CLP
+vector<double> Quantify_singlecase_clp(Eigen::MatrixXd& exp, Eigen::VectorXd& obs) {
+  assert(exp.rows() == obs.size());
+  const auto path = Quantify_singlecase_LP(exp, obs);
+  // create CLP environment
+  ClpSimplex model;
+}
+#endif
+
+vector<double> LPReassign_t::Quantify_singlecase(Eigen::MatrixXd& exp, Eigen::VectorXd& obs) {
+  #if defined HAVE_GUROBI
+  return Quantify_singlecase_grb(exp, obs);
+  #elif defined HAVE_CLP
+  return Quantify_singlecase_clp(exp, obs);
+  #else
+  throw std::runtime_error("No linear solver available");
+  #endif
+}
+
+#ifdef HAVE_GUROBI
+vector<double> Quantify_singlecase_junction_grb(Eigen::MatrixXd& exp, Eigen::VectorXd& obs, const vector< Eigen::VectorXi >& relevance, 
 	const vector< Eigen::VectorXd >& obs_bin, const vector< Eigen::VectorXi >& existence)
 {
 	assert(exp.rows() == obs.size());
@@ -611,6 +694,26 @@ vector<double> LPReassign_t::Quantify_singlecase_junction(Eigen::MatrixXd& exp, 
 	}
 	return alpha;
 };
+#endif
+
+#ifdef HAVE_CLP
+vector<double> Quantify_singlecase_junction_clp(Eigen::MatrixXd& exp, Eigen::VectorXd& obs, const vector< Eigen::VectorXi >& relevance, 
+                                                const vector< Eigen::VectorXd >& obs_bin, const vector< Eigen::VectorXi >& existence) {
+  throw std::runtime_error("CLP not yet implemented");
+}
+#endif
+
+vector<double> LPReassign_t::Quantify_singlecase_junction(Eigen::MatrixXd& exp, Eigen::VectorXd& obs, const vector< Eigen::VectorXi >& relevance, 
+                                                          const vector< Eigen::VectorXd >& obs_bin, const vector< Eigen::VectorXi >& existence) {
+#if defined HAVE_GUROBI
+  return Quantify_singlecase_junction_grb(exp, obs, relevance, obs_bin, existence);
+#elif defined HAVE_CLP
+  return Quantify_singlecase_junction_clp(exp, obs, relevance, obs_bin, existence);
+#else
+  throw std::runtime_error("No linear solver available");
+#endif
+}
+
 //****************** end test *********************
 
 
