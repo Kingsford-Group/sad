@@ -69,7 +69,7 @@ public:
 private:
 	vector< Eigen::VectorXd > ExpectedBinNorm;
 	vector< Eigen::VectorXd > ObservedBinNorm;
-	vector<int32_t> LenClass;
+	vector<uint32_t> LenClass;
 	vector<Eigen::VectorXd> Mean;
 	vector<Eigen::MatrixXd> Covariance;
 	vector<Eigen::MatrixXd> CholeskyDecom;
@@ -88,7 +88,7 @@ public:
 	vector<Eigen::MatrixXd> GetCovariance() {
 		return Covariance;
 	};
-	vector<int32_t> GetLenClass() {
+	const vector<uint32_t>& GetLenClass() const {
 		return LenClass;
 	};
 	

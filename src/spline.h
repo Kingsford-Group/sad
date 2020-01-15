@@ -33,10 +33,12 @@
 #include <algorithm>
 
 
+// That makes gcc -Wunused-function complain. Remove unamed namespace
+
 // unnamed namespace only because the implementation is in this
 // header file and we don't want to export symbols to the obj files
-namespace
-{
+// namespace
+// {
 
 namespace tk
 {
@@ -399,6 +401,6 @@ double spline::operator() (double x) const
 } // namespace tk
 
 
-} // namespace
+// } // namespace
 
 #endif /* TK_SPLINE_H */

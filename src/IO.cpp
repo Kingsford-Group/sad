@@ -70,7 +70,7 @@ void ReadCorrection(string correctionfile, const map<string,int32_t>& TransIndex
 	cout<<"["<<CurrentTimeStr.substr(0, CurrentTimeStr.size()-1)<<"] "<<"Start reading "<<correctionfile<<endl;
 	// initialize variables
 	Expected.clear();
-	for(int32_t i = 0; i < TransIndex.size(); i++){
+	for(uint32_t i = 0; i < TransIndex.size(); i++){
 		vector<double> tmp;
 		Expected.push_back(tmp);
 	}
@@ -121,7 +121,7 @@ void ReadStartpos(string startposfile, const map<string,int32_t>& TransIndex, co
 	cout<<"["<<CurrentTimeStr.substr(0, CurrentTimeStr.size()-1)<<"] "<<"Start reading "<<startposfile<<endl;
 	// initialize variables
 	Observed.clear();
-	for(int32_t i = 0; i < TransIndex.size(); i++){
+	for(uint32_t i = 0; i < TransIndex.size(); i++){
 		vector<double> tmp;
 		Observed.push_back(tmp);
 	}
@@ -152,7 +152,7 @@ void ReadStartpos(string startposfile, const map<string,int32_t>& TransIndex, co
 		input.read((char*)(counts.data()), seqlen*sizeof(double));
 		// generate distribution from positions and counts
 		vector<double> mydata(poses.back() + 1, 0);
-		for(int32_t j = 0; j < counts.size(); j++)
+		for(uint32_t j = 0; j < counts.size(); j++)
 			mydata[poses[j]] += counts[j];
 		// find corresponding position
 		map<string,int32_t>::const_iterator itidx = TransIndex.find(name);
@@ -181,7 +181,7 @@ void WriteNewAssignment_NumReads(string outputfile, const vector<Transcript_t>& 
 	assert(AdjustmentList.size() == newAssignment.size());
 	ofstream output(outputfile, ios::out);
 	output << "# Name\tLength\tNumReads\n";
-	for (int32_t i = 0; i < AdjustmentList.size(); i++) {
+	for (uint32_t i = 0; i < AdjustmentList.size(); i++) {
 		Eigen::VectorXd newobs = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(newAssignment[i].data(), newAssignment[i].size());
 		output << (Transcripts[AdjustmentList[i]].TransID) <<"\t"<< (newobs.size()) <<"\t"<< (newobs.sum()) << endl;
 	}
@@ -196,7 +196,7 @@ void WriteNewAssignment_Distribution(string outputfile, const vector<Transcript_
 	ofstream output(outputfile, ios::out | ios::binary);
 	int32_t n = newAssignment.size();
 	output.write(reinterpret_cast<char*>(&n), sizeof(int32_t));
-	for (int32_t i = 0; i < newAssignment.size(); i++) {
+	for (uint32_t i = 0; i < newAssignment.size(); i++) {
 		string tname = Transcripts[AdjustmentList[i]].TransID;
 		int32_t namelen = tname.size();
 		int32_t seqlen = newAssignment[i].size();
@@ -215,7 +215,7 @@ void WriteAdjustExpectedDistribution(string outputfile, const vector<string>& Tr
 	ofstream output(outputfile, ios::out | ios::binary);
 	int32_t n = ExpectedBinNorm.size();
 	output.write(reinterpret_cast<char*>(&n), sizeof(int32_t));
-	for (int32_t i = 0; i < ExpectedBinNorm.size(); i++) {
+	for (uint32_t i = 0; i < ExpectedBinNorm.size(); i++) {
 		string tname = TransNames[i];
 		int32_t namelen = tname.size();
 		int32_t seqlen = ExpectedBinNorm[i].size();
@@ -231,14 +231,14 @@ void WriteAdjustExpectedDistribution(string outputfile, const vector<string>& Tr
 };
 
 
-void WriteCovarianceMatrix(string outputfile, const vector<string>& TransNames, vector<int32_t>& LenClass, vector<Eigen::MatrixXd>& Covariance)
+void WriteCovarianceMatrix(string outputfile, const vector<string>& TransNames, const vector<uint32_t>& LenClass, vector<Eigen::MatrixXd>& Covariance)
 {
 	assert(TransNames.size() == LenClass.size());
 	ofstream output(outputfile, ios::out | ios::binary);
 	// write the matrix of each class
 	int32_t nclass = Covariance.size();
 	output.write(reinterpret_cast<char*>(&nclass), sizeof(int32_t));
-	for (int32_t i = 0; i < Covariance.size(); i++) {
+	for (uint32_t i = 0; i < Covariance.size(); i++) {
 		int32_t matrixsize = Covariance[i].cols();
 		output.write(reinterpret_cast<char*>(&matrixsize), sizeof(int32_t));
 		for (int32_t j = 0; j < matrixsize; j++)
@@ -255,7 +255,7 @@ void WriteCovarianceMatrix(string outputfile, const vector<string>& TransNames, 
 		int32_t namelen = tname.size();
 		output.write(reinterpret_cast<char*>(&namelen), sizeof(int32_t));
 		output.write(tname.c_str(), namelen*sizeof(char));
-		output.write(reinterpret_cast<char*>(&(LenClass[i])), sizeof(int32_t));
+		output.write(reinterpret_cast<const char*>(&(LenClass[i])), sizeof(int32_t));
 	}
 	output.close();
 };
@@ -331,7 +331,7 @@ void ReadNewAssignment_Distribution_old(string numreadsfile, string distfile, co
 		newAssignment.push_back(mydata);
 		// sanity check: number of reads should be equal to quant
 		double sum = 0;
-		for (int32_t j = 0; j < mydata.size(); j++)
+		for (uint32_t j = 0; j < mydata.size(); j++)
 			sum += mydata[j];
 		if (fabs(sum - NewQuant[i]) > 0.1)
 			cout << "Error: inconsistent read count.\t"<< sum <<"\t"<< NewQuant[i] << endl;
@@ -347,7 +347,7 @@ void WriteRegionalPvalue(string outputfile, const vector<Transcript_t>& Transcri
 	assert(RawPRegion.size() == AdjustedPRegion.size());
 	ofstream output(outputfile, ios::out);
 	output << "# Name\tBinStart\tBinEnd\tCoverage\tAnomalyScore\tRawPvalue\tAdjustedPvalue\n";
-	for (int32_t i = 0; i < RawPRegion.size(); i++){
+	for (uint32_t i = 0; i < RawPRegion.size(); i++){
 		const PRegion_t& rawp = RawPRegion[i];
 		const PRegion_t& adjp = AdjustedPRegion[i];
 		if (rawp.TID != adjp.TID)
@@ -373,7 +373,7 @@ void WriteOverallPvalue(string outputfile, const vector<Transcript_t>& Transcrip
 	vector<double> NNPvaluesNeg;
 	vector<double> NNAdjPvalueNeg;
 
-	for (int32_t i = 0; i < PValuesPos.size(); i++){
+	for (uint32_t i = 0; i < PValuesPos.size(); i++){
 		if (PValuesPos[i] > -0.5 && PValuesNeg[i] > -0.5) {
 			NNPvaluesPos.push_back(PValuesPos[i]);
 			NNPvaluesNeg.push_back(PValuesNeg[i]);
@@ -385,7 +385,7 @@ void WriteOverallPvalue(string outputfile, const vector<Transcript_t>& Transcrip
 	ofstream output(outputfile, ios::out);
 	int32_t count = 0;
 	output << "#Name\tCoverage\tAnomalyScoreNeg\tRegionStartNeg\tRegionEndNeg\tPValue_Neg\tAdjPValue_Neg\tAnomalyScorePos\tRegionStartPos\tRegionEndPos\tPValue_Pos\tAdjPValue_Pos\tMinAdjPValue\tChoice\n";
-	for (int32_t i = 0; i < PValuesPos.size(); i++) {
+	for (uint32_t i = 0; i < PValuesPos.size(); i++) {
 		if (PValuesPos[i] < -0.5 || PValuesNeg[i] < -0.5)
 			continue;
 		// calculate anomaly region in original coordinate
@@ -440,7 +440,7 @@ void WriteOverallPvalue(string outputfile, const vector<int32_t>& AdjustmentList
 	vector<double> NNPvaluesNeg;
 	vector<double> NNAdjPvalueNeg;
 
-	for (int32_t i = 0; i < PValuesPos.size(); i++){
+	for (uint32_t i = 0; i < PValuesPos.size(); i++){
 		if (PValuesPos[i] > -0.5 && PValuesNeg[i] > -0.5) {
 			NNPvaluesPos.push_back(PValuesPos[i]);
 			NNPvaluesNeg.push_back(PValuesNeg[i]);
@@ -452,7 +452,7 @@ void WriteOverallPvalue(string outputfile, const vector<int32_t>& AdjustmentList
 	ofstream output(outputfile, ios::out);
 	int32_t count = 0;
 	output << "#Name\tCoverage\tAnomalyScorePos\tRegionStartPos\tRegionEndPos\tPValue_Pos\tAdjPValue_Pos\tAnomalyScoreNeg\tRegionStartNeg\tRegionEndNeg\tPValue_Neg\tAdjPValue_Neg\tMinAdjPValue\tChoice\n";
-	for (int32_t i = 0; i < PValuesPos.size(); i++) {
+	for (uint32_t i = 0; i < PValuesPos.size(); i++) {
 		if (PValuesPos[i] < -0.5 || PValuesNeg[i] < -0.5)
 			continue;
 		// calculate anomaly region in original coordinate
@@ -500,7 +500,7 @@ void OldWriteOverallPvalue(string outputfile, const vector<Transcript_t>& Transc
 	// write non-negative p value to file
 	ofstream output(outputfile, ios::out);
 	output << "#Name\tCoverage\tDeletionScorePos\tDeletioScoreNeg\tRawPvalue\tAdjustedPvalue\tChoice\n";
-	for (int32_t i = 0; i < PValues.size(); i++) {
+	for (uint32_t i = 0; i < PValues.size(); i++) {
 		output << Transcripts[i].TransID <<"\t"<< TransCov[i] <<"\t"<< (dt.DeletionScore_pos[i]) <<"\t";
 		output << (dt.DeletionScore_neg[i]) <<"\t"<< PValues[i] <<"\t.\t"<< Choices[i] << endl;
 	}

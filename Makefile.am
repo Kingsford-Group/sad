@@ -51,4 +51,4 @@ script_local_subst = sed -e 's,[@]PYTHON3[@],$(PYTHON3),g' \
 	$(AM_V_GEN)$(script_local_subst) < $< > $@ && chmod a+x $@
 
 # Extra flag for the development tree
--include dev.mk
+-include $(top_srcdir)/dev.mk

@@ -130,7 +130,7 @@ bool SpanSplicing(int32_t StartPos, int32_t EndPos, const Transcript_t& t, int32
 {
 	// loop over the exons, and check whether read/mate align blocks hit the junction
 	int32_t coveredlen = 0;
-	for (int32_t i = 0; i < t.Exons.size() - 1; i++) {
+	for (uint32_t i = 0; i < t.Exons.size() - 1; i++) {
 		// junctions are considered as the end of the exon
 		coveredlen += t.Exons[i].second - t.Exons[i].first;
 		if (StartPos < coveredlen - threshold && EndPos > coveredlen + threshold)

@@ -106,7 +106,7 @@ bool SpanSplicing(const Alignment_t& ali, const Transcript_t& t, int32_t thresho
 {
 	// loop over the exons, and check whether read/mate align blocks hit the junction
 	int32_t coveredlen = 0;
-	for (int32_t i = 0; i < t.Exons.size() - 1; i++) {
+	for (uint32_t i = 0; i < t.Exons.size() - 1; i++) {
 		// junctions are considered as the end of the exon
 		coveredlen += t.Exons[i].second - t.Exons[i].first;
 		if (ali.StartPos < coveredlen - threshold && ali.EndPos > coveredlen + threshold)
@@ -153,13 +153,13 @@ void ReadLowQualReadNames(string file1name, string file2name, vector<string>& Lo
 		}
 		// low quality defined as Phred score < 4 for > 50% length
 		int32_t lowcount1 = 0, lowcount2 = 0;
-		for(int32_t i=0; i<line1.size(); i++){
+		for(uint32_t i=0; i<line1.size(); i++){
 			if(Phred33 && line1[i] < '!'+LowThresh)
 				lowcount1++;
 			else if(!Phred33 && line1[i] < '@'+LowThresh)
 				lowcount1++;
 		}
-		for(int32_t i=0; i<line2.size(); i++){
+		for(uint32_t i=0; i<line2.size(); i++){
 			if(Phred33 && line2[i] < '!'+LowThresh)
 				lowcount2++;
 			else if(!Phred33 && line2[i] < '@'+LowThresh)
@@ -216,13 +216,14 @@ void GetEqTrans(string eqclassfile, map<string,int32_t>& Trans, vector<string>& 
 
 	int32_t linecount=0;
 	int32_t numtrans=0;
-	int32_t numeqclass=0;
+	//	int32_t numeqclass=0;
 	while(getline(input,line)){
 		linecount++;
 		if(linecount==1)
 			numtrans=stoi(line);
-		else if(linecount==2)
-			numeqclass=stoi(line);
+		else if(linecount==2) { 
+			//			numeqclass=stoi(line);
+		}
 		else if(linecount<=2+numtrans){
 			Trans[line]=linecount-3;
 			TransNames.push_back(line);
@@ -254,7 +255,7 @@ void GetSalmonWeightAssign(map< pair<int32_t,int32_t>,double >& WeightAssign, co
 		int32_t eqID=it->second;
 		vector<double> auxs;
 
-		for(int32_t i=0; i<TIDs.size(); i++){
+		for(uint32_t i=0; i<TIDs.size(); i++){
 			map< pair<int32_t,int32_t>,double >::const_iterator itaux = Aux.find(make_pair(eqID, TIDs[i]));
 			if(itaux == Aux.cend())
 				cout<<"Error\n";
@@ -262,14 +263,14 @@ void GetSalmonWeightAssign(map< pair<int32_t,int32_t>,double >& WeightAssign, co
 		}
 
 		double denom=0.0;
-		for(int32_t i=0; i<TIDs.size(); i++)
+		for(uint32_t i=0; i<TIDs.size(); i++)
 			denom += SalmonQuant[TIDs[i]] * auxs[i];
 		if(denom>0){
-			for(int32_t i=0; i<TIDs.size(); i++)
+			for(uint32_t i=0; i<TIDs.size(); i++)
 				WeightAssign[make_pair(eqID, TIDs[i])] = SalmonQuant[TIDs[i]] * auxs[i] / denom;
 		}
 		else{
-			for(int32_t i=0; i<TIDs.size(); i++)
+			for(uint32_t i=0; i<TIDs.size(); i++)
 				WeightAssign[make_pair(eqID, TIDs[i])] = 0;
 		}
 	}
@@ -345,21 +346,21 @@ void FLDKDE(vector<int32_t>& RawFLD, vector<double>& FLD, int32_t kernel_n=10, d
 	for(int32_t i=0; i<kernel_n+1; i++)
 		kernel[i]=pdf(bino, i);
 	// calculate FLD based on kernel
-	for(int32_t i=0; i<RawFLD.size(); i++){
+	for(int32_t i=0; i<(int32_t)RawFLD.size(); i++){
 		if(RawFLD[i]==0)
 			continue;
 		int32_t offset=max(0, i-kernel_n/2);
-		while(offset<=i+kernel_n/2 && offset<RawFLD.size()){
+		while(offset<=i+kernel_n/2 && offset<(int32_t)RawFLD.size()){
 			FLD[offset]+=RawFLD[i]*kernel[offset-i+kernel_n/2];
 			offset++;
 		}
 	}
 	double sum=0;
-	for(int32_t i=0; i<RawFLD.size(); i++){
+	for(uint32_t i=0; i<RawFLD.size(); i++){
 		FLD[i]+=1e-8;
 		sum+=FLD[i];
 	}
-	for(int32_t i=0; i<RawFLD.size(); i++)
+	for(uint32_t i=0; i<RawFLD.size(); i++)
 		FLD[i]/=sum;
 };
 
@@ -545,7 +546,7 @@ int32_t ReadBAMStartPos(string bamfile, const vector<string>& LowQualReadNames, 
 					tidgroup.resize(distance(tidgroup.begin(), itend));
 
 					int32_t eqID=EqTransID[tidgroup];
-					for(int32_t i=0; i<merged.size(); i++){
+					for(uint32_t i=0; i<merged.size(); i++){
 						double w=WeightAssign[make_pair(eqID, merged[i].TID)];
 						
 						// coverage is counted as fragment, not each end in read pair
@@ -582,7 +583,7 @@ int32_t ReadBAMStartPos(string bamfile, const vector<string>& LowQualReadNames, 
 			tidgroup.resize(distance(tidgroup.begin(), itend));
 
 			int32_t eqID=EqTransID[tidgroup];
-			for(int32_t i=0; i<merged.size(); i+=2){
+			for(uint32_t i=0; i<merged.size(); i+=2){
 				double w=WeightAssign[make_pair(eqID,merged[i].TID)];
 				
 				int32_t fragstart;
@@ -606,8 +607,10 @@ int32_t ReadBAMStartPos(string bamfile, const vector<string>& LowQualReadNames, 
 	bam_hdr_destroy(header);
 	sam_close(bamreader);
 
-	int32_t flag1 = WriteReadBrdy(Trans, TransLength, ReadBrdy, ss);
-	int32_t flag2 = WriteReadBrdy(Trans, TransLength, JunctionBrdy, ss_junction);
+	// int32_t flag1 =
+	WriteReadBrdy(Trans, TransLength, ReadBrdy, ss);
+	// int32_t flag2 =
+	WriteReadBrdy(Trans, TransLength, JunctionBrdy, ss_junction);
 	return 0;
 };
 
@@ -663,7 +666,7 @@ int32_t ReadBAMSingleMapStartPos2(string bamfile, const vector<string>& LowQualR
 					tidgroup.resize(distance(tidgroup.begin(), itend));
 
 					int32_t eqID=EqTransID[tidgroup];
-					for(int32_t i=0; i<alignments.size(); i++){
+					for(uint32_t i=0; i<alignments.size(); i++){
 						double w=WeightAssign[make_pair(eqID,readtids[i])];
 						
 						// coverage is counted as fragment, not each end in read pair
@@ -683,7 +686,7 @@ int32_t ReadBAMSingleMapStartPos2(string bamfile, const vector<string>& LowQualR
 					tidgroup.resize(distance(tidgroup.begin(), itend));
 
 					int32_t eqID=EqTransID[tidgroup];
-					for(int32_t i=0; i<alignments.size(); i++){
+					for(uint32_t i=0; i<alignments.size(); i++){
 						double w=WeightAssign[make_pair(eqID,readtids[i])];
 						
 						// coverage is counted as fragment, not each end in read pair
@@ -715,7 +718,7 @@ int32_t ReadBAMSingleMapStartPos2(string bamfile, const vector<string>& LowQualR
 			tidgroup.resize(distance(tidgroup.begin(), itend));
 
 			int32_t eqID=EqTransID[tidgroup];
-			for(int32_t i=0; i<alignments.size(); i++){
+			for(uint32_t i=0; i<alignments.size(); i++){
 				double w=WeightAssign[make_pair(eqID,readtids[i])];
 				
 				int32_t fragstart=alignments[i].first;
@@ -733,7 +736,7 @@ int32_t ReadBAMSingleMapStartPos2(string bamfile, const vector<string>& LowQualR
 			tidgroup.resize(distance(tidgroup.begin(), itend));
 
 			int32_t eqID=EqTransID[tidgroup];
-			for(int32_t i=0; i<alignments.size(); i++){
+			for(uint32_t i=0; i<alignments.size(); i++){
 				double w=WeightAssign[make_pair(eqID,readtids[i])];
 				
 				int32_t fragstart=alignments[i].first;
@@ -768,7 +771,7 @@ int32_t ReadSalmonFragLen(string bamfile, const vector<string>& LowQualReadNames
 	int32_t fldLow=0, fldHigh=FLD.size();
 	double fldcummulative=0;
 	bool lb=false, ub=false;
-	for(int32_t i=0; i<FLD.size(); i++){
+	for(uint32_t i=0; i<FLD.size(); i++){
 		if(lb && ub)
 			break;
 		fldcummulative += FLD[i];
@@ -831,7 +834,7 @@ int32_t ReadSalmonFragLen(string bamfile, const vector<string>& LowQualReadNames
 					int32_t eqID=EqTransID[tidgroup];
 
 					assert(readtids.size() == alignments.size());
-					for(int32_t i=0; i<readtids.size(); i++){
+					for(uint32_t i=0; i<readtids.size(); i++){
 						double w=WeightAssign[make_pair(eqID,readtids[i])];
 						if(alignments[i].second-alignments[i].first < fldLow || alignments[i].second-alignments[i].first > fldHigh){
 							Brdy tmp(readtids[i], alignments[i].first, false, w);
@@ -860,7 +863,7 @@ int32_t ReadSalmonFragLen(string bamfile, const vector<string>& LowQualReadNames
 			int32_t eqID=EqTransID[tidgroup];
 			
 			assert(readtids.size() == alignments.size());
-			for(int32_t i=0; i<readtids.size(); i++){
+			for(uint32_t i=0; i<readtids.size(); i++){
 				double w=WeightAssign[make_pair(eqID,readtids[i])];
 				if(alignments[i].second-alignments[i].first < fldLow || alignments[i].second-alignments[i].first > fldHigh){
 					Brdy tmp(readtids[i], alignments[i].first, false, w);

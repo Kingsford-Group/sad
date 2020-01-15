@@ -40,7 +40,7 @@ void WriteNewAssignment_Distribution(string outputfile, const vector<Transcript_
 
 void WriteAdjustExpectedDistribution(string outputfile, const vector<string>& TransNames, vector< Eigen::VectorXd >& ExpectedBinNorm);
 
-void WriteCovarianceMatrix(string outputfile, const vector<string>& TransNames, vector<int32_t>& LenClass, vector<Eigen::MatrixXd>& Covariance);
+void WriteCovarianceMatrix(string outputfile, const vector<string>& TransNames, const vector<uint32_t>& LenClass, vector<Eigen::MatrixXd>& Covariance);
 
 void ReadNewAssignment_Distribution(string inputfile, const map<string,int32_t>& TransIndex, 
 	vector<int32_t>& AdjustmentList, vector< vector<double> >& newAssignment);

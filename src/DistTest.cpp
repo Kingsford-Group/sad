@@ -27,7 +27,7 @@ DistTest_t::DistTest_t(const map<string,int32_t>& _TransIndex, const map<string,
 		TransNames[ it->second ] = it->first;
 	TransCov.clear();
 	// sanity check
-	for (int32_t i = 0; i < TransIndex.size(); i++){
+	for (uint32_t i = 0; i < TransIndex.size(); i++){
 		assert(TransNames[i] != "");
 		assert(TransLength[i] > 0);
 	}
@@ -36,7 +36,7 @@ DistTest_t::DistTest_t(const map<string,int32_t>& _TransIndex, const map<string,
 	nBins.clear();
 	vector<int32_t> sortedTransLength(TransLength.begin(), TransLength.end());
 	sort(sortedTransLength.begin(), sortedTransLength.end());
-	for (int32_t i = 0; i < percentile.size(); i++) {
+	for (uint32_t i = 0; i < percentile.size(); i++) {
 		// lenBounds is the largest length of each group
 		int32_t ind = sortedTransLength.size()*percentile[i] - 1;
 		lenBounds.push_back(sortedTransLength[ind]);
@@ -55,7 +55,7 @@ DistTest_t::DistTest_t(const map<string,int32_t>& _TransIndex, const map<string,
 	LenClass.clear();
 	assert(Expected.size() == Observed.size());
 	double tmpmin = 1;
-	for (int32_t i = 0; i < Expected.size(); i++) {
+	for (uint32_t i = 0; i < Expected.size(); i++) {
 		// identify len_class
 		assert(Expected[i].size() == Observed[i].size());
 		int32_t length = Expected[i].size();
@@ -66,7 +66,7 @@ DistTest_t::DistTest_t(const map<string,int32_t>& _TransIndex, const map<string,
 		vector<double> tmpobs(nBins[len_class], 0);
 		int32_t current_bin = 0;
 		double current_bin_end = 1.0*(current_bin+1)*length/nBins[len_class];
-		for (int32_t j = 0; j < Expected[i].size(); j++){
+		for (uint32_t j = 0; j < Expected[i].size(); j++){
 			if (j > current_bin_end){
 				current_bin++;
 				current_bin_end = 1.0*(current_bin+1)*length/nBins[len_class];
@@ -78,16 +78,16 @@ DistTest_t::DistTest_t(const map<string,int32_t>& _TransIndex, const map<string,
 		// normalize
 		double sumexp = 0;
 		double sumobs = 0;
-		for (int32_t j = 0; j < tmpexp.size(); j++){
+		for (uint32_t j = 0; j < tmpexp.size(); j++){
 			sumexp += tmpexp[j];
 			sumobs += tmpobs[j];
 		}
 		if (sumexp > 0){
-			for (int32_t j = 0; j < tmpexp.size(); j++)
+			for (uint32_t j = 0; j < tmpexp.size(); j++)
 				tmpexp[j] /= sumexp;
 		}
 		if (sumobs > 0){
-			for (int32_t j = 0; j < tmpobs.size(); j++)
+			for (uint32_t j = 0; j < tmpobs.size(); j++)
 				tmpobs[j] /= sumobs;
 		}
 		// push back
@@ -115,11 +115,11 @@ DistTest_t::DistTest_t(const map<string,int32_t>& _TransIndex, const map<string,
 	Sampling_WEIGHTS.clear();
 	boost::math::normal s;
 	double sumweights = 0;
-	for(int32_t i = 0; i < Sampling_NSTDS.size(); i++){
+	for(uint32_t i = 0; i < Sampling_NSTDS.size(); i++){
 		Sampling_WEIGHTS.push_back( boost::math::pdf(s, Sampling_NSTDS[i]) );
 		sumweights += Sampling_WEIGHTS.back();
 	}
-	for(int32_t i = 0; i < Sampling_WEIGHTS.size(); i++)
+	for(uint32_t i = 0; i < Sampling_WEIGHTS.size(); i++)
 		Sampling_WEIGHTS[i] /= sumweights;
 
 	// set default number of threads
@@ -144,7 +144,7 @@ DistTest_t::DistTest_t(const map<string,int32_t>& _TransIndex, const map<string,
 		TransNames[ it->second ] = it->first;
 	TransCov.clear();
 	// sanity check
-	for (int32_t i = 0; i < TransIndex.size(); i++){
+	for (uint32_t i = 0; i < TransIndex.size(); i++){
 		assert(TransNames[i] != "");
 		assert(TransLength[i] > 0);
 	}
@@ -153,7 +153,7 @@ DistTest_t::DistTest_t(const map<string,int32_t>& _TransIndex, const map<string,
 	nBins.clear();
 	vector<int32_t> sortedTransLength(TransLength.begin(), TransLength.end());
 	sort(sortedTransLength.begin(), sortedTransLength.end());
-	for (int32_t i = 0; i < percentile.size(); i++) {
+	for (uint32_t i = 0; i < percentile.size(); i++) {
 		// lenBounds is the largest length of each group
 		int32_t ind = sortedTransLength.size()*percentile[i] - 1;
 		lenBounds.push_back(sortedTransLength[ind]);
@@ -172,7 +172,7 @@ DistTest_t::DistTest_t(const map<string,int32_t>& _TransIndex, const map<string,
 	LenClass.clear();
 	assert(Expected.size() == Observed.size());
 	double tmpmin = 1;
-	for (int32_t i = 0; i < Expected.size(); i++) {
+	for (uint32_t i = 0; i < Expected.size(); i++) {
 		// identify len_class
 		assert(Expected[i].size() == Observed[i].size());
 		int32_t length = Expected[i].size();
@@ -183,7 +183,7 @@ DistTest_t::DistTest_t(const map<string,int32_t>& _TransIndex, const map<string,
 		vector<double> tmpobs(nBins[len_class], 0);
 		int32_t current_bin = 0;
 		double current_bin_end = 1.0*(current_bin+1)*length/nBins[len_class];
-		for (int32_t j = 0; j < Expected[i].size(); j++){
+		for (uint32_t j = 0; j < Expected[i].size(); j++){
 			if (j > current_bin_end){
 				current_bin++;
 				current_bin_end = 1.0*(current_bin+1)*length/nBins[len_class];
@@ -195,16 +195,16 @@ DistTest_t::DistTest_t(const map<string,int32_t>& _TransIndex, const map<string,
 		// normalize
 		double sumexp = 0;
 		double sumobs = 0;
-		for (int32_t j = 0; j < tmpexp.size(); j++){
+		for (uint32_t j = 0; j < tmpexp.size(); j++){
 			sumexp += tmpexp[j];
 			sumobs += tmpobs[j];
 		}
 		if (sumexp > 0){
-			for (int32_t j = 0; j < tmpexp.size(); j++)
+			for (uint32_t j = 0; j < tmpexp.size(); j++)
 				tmpexp[j] /= sumexp;
 		}
 		if (sumobs > 0){
-			for (int32_t j = 0; j < tmpobs.size(); j++)
+			for (uint32_t j = 0; j < tmpobs.size(); j++)
 				tmpobs[j] /= sumobs;
 		}
 		// push back
@@ -232,11 +232,11 @@ DistTest_t::DistTest_t(const map<string,int32_t>& _TransIndex, const map<string,
 	Sampling_WEIGHTS.clear();
 	boost::math::normal s;
 	double sumweights = 0;
-	for(int32_t i = 0; i < Sampling_NSTDS.size(); i++){
+	for(uint32_t i = 0; i < Sampling_NSTDS.size(); i++){
 		Sampling_WEIGHTS.push_back( boost::math::pdf(s, Sampling_NSTDS[i]) );
 		sumweights += Sampling_WEIGHTS.back();
 	}
-	for(int32_t i = 0; i < Sampling_WEIGHTS.size(); i++)
+	for(uint32_t i = 0; i < Sampling_WEIGHTS.size(); i++)
 		Sampling_WEIGHTS[i] /= sumweights;
 
 	// set default number of threads
@@ -254,12 +254,12 @@ void DistTest_t::AdjustExpected(double nstdthresh)
 
 	// group expressed transcripts based on LenClass
 	vector< vector<int32_t> > lenTransIndexes;
-	for (int32_t i = 0; i < lenBounds.size(); i++){
+	for (uint32_t i = 0; i < lenBounds.size(); i++){
 		vector<int32_t> tmp;
 		tmp.reserve(int32_t(TransIndex.size()*0.1));
 		lenTransIndexes.push_back(tmp);
 	}
-	for (int32_t i = 0; i < ExpectedBinNorm.size(); i++){
+	for (uint32_t i = 0; i < ExpectedBinNorm.size(); i++){
 		if (TransCov[i] > 0)
 			lenTransIndexes[ LenClass[i] ].push_back(i);
 	}
@@ -269,10 +269,10 @@ void DistTest_t::AdjustExpected(double nstdthresh)
 	Covariance.clear();
 	CholeskyDecom.clear();
 	// for each LenClass, calculate the mean / std of expression, select the highly expressed to calculate shift
-	for (int32_t i = 0; i < lenBounds.size(); i++){
+	for (uint32_t i = 0; i < lenBounds.size(); i++){
 		// calculate logTPM threshold for high expression
 		Eigen::VectorXd logTPM(lenTransIndexes[i].size());
-		for (int32_t j = 0; j < lenTransIndexes[i].size(); j++){
+		for (uint32_t j = 0; j < lenTransIndexes[i].size(); j++){
 			int32_t ind = lenTransIndexes[i][j];
 			double tpm = TransCov[ind];
 			logTPM(j) = std::log(tpm);
@@ -287,7 +287,7 @@ void DistTest_t::AdjustExpected(double nstdthresh)
 		logTPM_thresh = logTPM_mean + nstdthresh * logTPM_std;
 		// make a matrix of shifts for high expression transcripts
 		vector<int32_t> passedIndex;
-		for (int32_t j = 0; j < lenTransIndexes[i].size(); j++){
+		for (uint32_t j = 0; j < lenTransIndexes[i].size(); j++){
 			if (logTPM(j) > logTPM_thresh)
 				passedIndex.push_back(lenTransIndexes[i][j]);
 		}
@@ -297,7 +297,7 @@ void DistTest_t::AdjustExpected(double nstdthresh)
 			else
 				cout << "Warning: not enough transcripts are expressed in length class " << i <<" (0" <<","<< lenBounds[i] << "). Not inferring the mean and variance of Gaussian error of expected distribution.\n";
 			// set the observed distribution and coverage to 0
-			for (int32_t j = 0; j < lenTransIndexes[i].size(); j++) {
+			for (uint32_t j = 0; j < lenTransIndexes[i].size(); j++) {
 				ObservedBinNorm[lenTransIndexes[i][j]] = Eigen::VectorXd::Zero(ObservedBinNorm[lenTransIndexes[i][j]].size());
 				TransCov[lenTransIndexes[i][j]] = 0;
 			}
@@ -314,7 +314,7 @@ void DistTest_t::AdjustExpected(double nstdthresh)
 		}
 		assert(ObservedBinNorm[passedIndex[0]].size() == nBins[i]);
 		Eigen::MatrixXd Shifts(passedIndex.size(), nBins[i] - 1);
-		for (int32_t j = 0; j < passedIndex.size(); j++){
+		for (uint32_t j = 0; j < passedIndex.size(); j++){
 			assert(fabs(ObservedBinNorm[passedIndex[j]].sum() - 1) < 1e-8);
 			assert(fabs(ExpectedBinNorm[passedIndex[j]].sum() - 1) < 1e-8);
 			Shifts.row(j) = (ObservedBinNorm[passedIndex[j]] - ExpectedBinNorm[passedIndex[j]]).head(nBins[i] - 1);
@@ -345,7 +345,7 @@ void DistTest_t::AdjustExpected(double nstdthresh)
 		}
 		Covariance.push_back(cov_shift);
 		// adjust all ExpectedBinNorm in this LenClass
-		for (int32_t j = 0; j < ExpectedBinNorm.size(); j++){
+		for (uint32_t j = 0; j < ExpectedBinNorm.size(); j++){
 			if (LenClass[j] == i){
 				ExpectedBinNorm[j] += Mean.back();
 				bool needrenormal = false;
@@ -370,7 +370,7 @@ void DistTest_t::AdjustExpected(double nstdthresh)
 void DistTest_t::UpdateObserved(const vector< vector<double> >& NewObserved)
 {
 	assert(NewObserved.size() == ObservedBinNorm.size());
-	for (int32_t i = 0; i < NewObserved.size(); i++){
+	for (uint32_t i = 0; i < NewObserved.size(); i++){
 		assert(NewObserved[i].size() == TransLength[i]);
 		int32_t len_class = LenClass[i];
 		if (Covariance[len_class].isZero(1e-18))
@@ -381,7 +381,7 @@ void DistTest_t::UpdateObserved(const vector< vector<double> >& NewObserved)
 		vector<double> tmpobs(nBins[len_class], 0);
 		int32_t current_bin = 0;
 		double current_bin_end = 1.0*(current_bin+1)*length/nBins[len_class];
-		for (int32_t j = 0; j < NewObserved[i].size(); j++){
+		for (uint32_t j = 0; j < NewObserved[i].size(); j++){
 			if (j > current_bin_end){
 				current_bin++;
 				current_bin_end = 1.0*(current_bin+1)*length/nBins[len_class];
@@ -392,7 +392,7 @@ void DistTest_t::UpdateObserved(const vector< vector<double> >& NewObserved)
 		}
 		// normalize
 		if (sumobs > 0){
-			for (int32_t j = 0; j < tmpobs.size(); j++)
+			for (uint32_t j = 0; j < tmpobs.size(); j++)
 				tmpobs[j] /= sumobs;
 		}
 		// update
@@ -406,7 +406,7 @@ void DistTest_t::UpdateObserved(const vector< vector<double> >& NewObserved)
 void DistTest_t::UpdateObserved(const vector<int32_t>& AdjustmentList, const vector< vector<double> >& NewObserved)
 {
 	assert(NewObserved.size() == AdjustmentList.size());
-	for (int32_t i = 0; i < AdjustmentList.size(); i++){
+	for (uint32_t i = 0; i < AdjustmentList.size(); i++){
 		assert(NewObserved[i].size() == TransLength[AdjustmentList[i]]);
 		int32_t len_class = LenClass[AdjustmentList[i]];
 		// binning and calculate sum
@@ -415,7 +415,7 @@ void DistTest_t::UpdateObserved(const vector<int32_t>& AdjustmentList, const vec
 		vector<double> tmpobs(nBins[len_class], 0);
 		int32_t current_bin = 0;
 		double current_bin_end = 1.0*(current_bin+1)*length/nBins[len_class];
-		for (int32_t j = 0; j < NewObserved[i].size(); j++){
+		for (uint32_t j = 0; j < NewObserved[i].size(); j++){
 			if (j > current_bin_end){
 				current_bin++;
 				current_bin_end = 1.0*(current_bin+1)*length/nBins[len_class];
@@ -426,7 +426,7 @@ void DistTest_t::UpdateObserved(const vector<int32_t>& AdjustmentList, const vec
 		}
 		// normalize
 		if (sumobs > 0){
-			for (int32_t j = 0; j < tmpobs.size(); j++)
+			for (uint32_t j = 0; j < tmpobs.size(); j++)
 				tmpobs[j] /= sumobs;
 		}
 		// update
@@ -459,7 +459,7 @@ void DistTest_t::CalDeletionScore(double covthresh, double numthresh)
 	DeletionScore_neg.assign(ExpectedBinNorm.size(), -1);
 	DeletionRegion_neg.assign(ExpectedBinNorm.size(), make_pair(-1,-1));
 	// calculate exp - obs
-	for (int32_t i = 0; i < ExpectedBinNorm.size(); i++){
+	for (uint32_t i = 0; i < ExpectedBinNorm.size(); i++){
 		if (TransCov[i] < covthresh || (TransCov[i]*TransLength[i]) < numthresh)
 			continue;
 		Eigen::VectorXd Diff = ExpectedBinNorm[i] - ObservedBinNorm[i];
@@ -490,7 +490,7 @@ void DistTest_t::CalDeletionScore(double covthresh, double numthresh)
 		}
 	}
 	// calculate obs - exp
-	for (int32_t i = 0; i < ObservedBinNorm.size(); i++){
+	for (uint32_t i = 0; i < ObservedBinNorm.size(); i++){
 		if (TransCov[i] < covthresh || (TransCov[i]*TransLength[i]) < numthresh)
 			continue;
 		Eigen::VectorXd Diff = ObservedBinNorm[i] - ExpectedBinNorm[i];
@@ -531,7 +531,7 @@ void DistTest_t::CalDeletionScore(const vector<int32_t>& AdjustmentList, double 
 	assert(DeletionScore_neg.size() == ExpectedBinNorm.size());
 	assert(DeletionRegion_neg.size() == ExpectedBinNorm.size());
 	// calculate exp - obs
-	for (int32_t tmpi = 0; tmpi < AdjustmentList.size(); tmpi++){
+	for (uint32_t tmpi = 0; tmpi < AdjustmentList.size(); tmpi++){
 		int32_t i = AdjustmentList[tmpi];
 		if (TransCov[i] < covthresh || (TransCov[i]*TransLength[i]) < numthresh) {
 			DeletionScore_pos[i] = -1;
@@ -568,7 +568,7 @@ void DistTest_t::CalDeletionScore(const vector<int32_t>& AdjustmentList, double 
 		}
 	}
 	// calculate obs - exp
-	for (int32_t tmpi = 0; tmpi < AdjustmentList.size(); tmpi++){
+	for (uint32_t tmpi = 0; tmpi < AdjustmentList.size(); tmpi++){
 		int32_t i = AdjustmentList[tmpi];
 		if (TransCov[i] < covthresh || (TransCov[i]*TransLength[i]) < numthresh)
 			continue;
@@ -665,7 +665,7 @@ vector<PRegion_t> DistTest_t::SinglePvalue_regional_pos(int32_t ind)
 			assert(variance > -1e-4);
 			// total number of reads and extreme number rod reads
 			double numreads_total = TransCov[ind] * TransLength[ind];
-			int32_t numreads_expected = numreads_total * prob_theo;
+			// int32_t numreads_expected = numreads_total * prob_theo;
 			int32_t numreads_extreme_lb = numreads_total * (prob_theo - diff);
 			int32_t numreads_extreme_ub = ceil(numreads_total * (prob_theo + diff));
 			assert(numreads_total >= 0);
@@ -675,7 +675,7 @@ vector<PRegion_t> DistTest_t::SinglePvalue_regional_pos(int32_t ind)
 			if (variance > 0){
 				double sumeffect_weight_lb = 0;
 				double sumeffect_weight_ub = 0;
-				for(int32_t i = 0; i < Sampling_NSTDS.size(); i++) {
+				for(uint32_t i = 0; i < Sampling_NSTDS.size(); i++) {
 					double prob_sample = prob_theo + Sampling_NSTDS[i] * std::sqrt(variance);
 					if (prob_sample <= 0 || prob_sample >= 1)
 						continue;
@@ -736,7 +736,7 @@ vector<PRegion_t> DistTest_t::SinglePvalue_regional_neg(int32_t ind)
 			if (variance > 0){
 				double sumeffect_weight_lb = 0;
 				double sumeffect_weight_ub = 0;
-				for(int32_t i = 0; i < Sampling_NSTDS.size(); i++) {
+				for(uint32_t i = 0; i < Sampling_NSTDS.size(); i++) {
 					double prob_sample = prob_theo + Sampling_NSTDS[i] * std::sqrt(variance);
 					if (prob_sample <= 0 || prob_sample >= 1)
 						continue;
@@ -771,7 +771,7 @@ pair<double,double> DistTest_t::SinglePvalue_overall(int32_t ind)
 {
 	double pvalue_pos = -1;
 	double pvalue_neg = -1;
-	bool choice = 0;
+	// bool choice = 0;
 	// for pos = exp - obs
 	if (DeletionScore_pos[ind] > 0){
 		pvalue_pos = 0;
@@ -790,7 +790,7 @@ pair<double,double> DistTest_t::SinglePvalue_overall(int32_t ind)
 				// extreme number of reads
 				int32_t numreads_extreme = numreads_total * (prob_theo - diff);
 				if (variance > 0 && numreads_extreme >= 0){
-					for (int32_t k = 0; k < Sampling_NSTDS.size(); k++){
+					for (uint32_t k = 0; k < Sampling_NSTDS.size(); k++){
 						double prob_sample = prob_theo + Sampling_NSTDS[k] * std::sqrt(variance);
 						if (prob_sample <= 0 || prob_sample >= 1)
 							continue;
@@ -828,7 +828,7 @@ pair<double,double> DistTest_t::SinglePvalue_overall(int32_t ind)
 				// extreme number of reads
 				int32_t numreads_extreme = std::min(numreads_total, ceil(numreads_total * (prob_theo + diff)));
 				if (variance > 0){
-					for (int32_t k = 0; k < Sampling_NSTDS.size(); k++){
+					for (uint32_t k = 0; k < Sampling_NSTDS.size(); k++){
 						double prob_sample = prob_theo + Sampling_NSTDS[k] * std::sqrt(variance);
 						if (prob_sample <= 0 || prob_sample >= 1)
 							continue;
@@ -928,11 +928,11 @@ pair<double, double> DistTest_t::SinglePvalue_overall_empirical(int32_t ind, int
 	// count number of samples that have a more extreme deletion score
 	int32_t count_pos = 0;
 	int32_t count_neg = 0;
-	for (int32_t i = 0; i < DelScore_pos.size(); i++) {
+	for (uint32_t i = 0; i < DelScore_pos.size(); i++) {
 		if (DelScore_pos[i] >= diff_pos)
 			count_pos ++;
 	}
-	for (int32_t i = 0; i < DelScore_neg.size(); i++) {
+	for (uint32_t i = 0; i < DelScore_neg.size(); i++) {
 		if (DelScore_neg[i] >= diff_neg)
 			count_neg ++;
 	}
@@ -955,7 +955,7 @@ void DistTest_t::PValue_regional(vector<PRegion_t>& PValuesPos, vector<PRegion_t
 	mutex PValues_mutex_pos, PValues_mutex_neg;
 	omp_set_num_threads(Num_Threads);
 	#pragma omp parallel for
-	for (int32_t i = 0; i < TransNames.size(); i++){
+	for (uint32_t i = 0; i < TransNames.size(); i++){
 		vector<PRegion_t> tmp_pos = SinglePvalue_regional_pos(i);
 		{
 			lock_guard<std::mutex> guard(PValues_mutex_pos);
@@ -989,7 +989,7 @@ void DistTest_t::PValue_regional(const vector<int32_t>& AdjustmentList, vector<P
 	mutex PValues_mutex;
 	omp_set_num_threads(Num_Threads);
 	#pragma omp parallel for
-	for (int32_t tmpi = 0; tmpi < AdjustmentList.size(); tmpi++){
+	for (uint32_t tmpi = 0; tmpi < AdjustmentList.size(); tmpi++){
 		int32_t i = AdjustmentList[tmpi];
 		vector<PRegion_t> tmp_pos = SinglePvalue_regional_pos(i);
 		{
@@ -1032,7 +1032,7 @@ void DistTest_t::PValue_overall_empirical(vector<double>& PValuesPos, vector<dou
 	r = gsl_rng_alloc (T);
 	omp_set_num_threads(Num_Threads);
 	#pragma omp parallel for
-	for (int32_t i = 0; i < TransNames.size(); i++){
+	for (uint32_t i = 0; i < TransNames.size(); i++){
 		pair<double,double> pvs = SinglePvalue_overall_empirical(i, 100, r);
 		PValuesPos[i] = pvs.first;
 		PValuesNeg[i] = pvs.second;
@@ -1045,7 +1045,7 @@ void DistTest_t::PValue_overall_empirical(vector<double>& PValuesPos, vector<dou
 	}
 	// count small p values due to lack of sampling
 	int32_t count = 0;
-	for (int32_t i = 0; i < TransNames.size(); i++) {
+	for (uint32_t i = 0; i < TransNames.size(); i++) {
 		if (min(PValuesPos[i], PValuesNeg[i]) < 0.01 && min(PValuesPos[i], PValuesNeg[i]) >= 0)
 			count++;
 	}
@@ -1053,7 +1053,7 @@ void DistTest_t::PValue_overall_empirical(vector<double>& PValuesPos, vector<dou
 	// second round sampling with enlarged sampling size
 	omp_set_num_threads(Num_Threads);
 	#pragma omp parallel for
-	for (int32_t i = 0; i < TransNames.size(); i++){
+	for (uint32_t i = 0; i < TransNames.size(); i++){
 		if (min(PValuesPos[i], PValuesNeg[i]) > 0.01 || min(PValuesPos[i], PValuesNeg[i]) < -0.5)
 			continue;
 		// calculate approximate p value
@@ -1082,7 +1082,7 @@ void DistTest_t::PValue_overall_empirical(vector<double>& PValuesPos, vector<dou
 	}
 	// count small p values due to lack of sampling
 	count = 0;
-	for (int32_t i = 0; i < TransNames.size(); i++) {
+	for (uint32_t i = 0; i < TransNames.size(); i++) {
 		if (min(PValuesPos[i], PValuesNeg[i]) < 0.01 && min(PValuesPos[i], PValuesNeg[i]) >= 0)
 			count++;
 	}
@@ -1115,7 +1115,7 @@ void DistTest_t::PValue_overall_empirical(const vector<int32_t>& AdjustmentList,
 	r = gsl_rng_alloc (T);
 	omp_set_num_threads(Num_Threads);
 	#pragma omp parallel for
-	for (int32_t i = 0; i < AdjustmentList.size(); i++){
+	for (uint32_t i = 0; i < AdjustmentList.size(); i++){
 		pair<double,double> pvs = SinglePvalue_overall_empirical(AdjustmentList[i], 100, r);
 		PValuesPos[i] = pvs.first;
 		PValuesNeg[i] = pvs.second;
@@ -1136,7 +1136,7 @@ void DistTest_t::PValue_overall_empirical(const vector<int32_t>& AdjustmentList,
 	// second round sampling with enlarged sampling size
 	omp_set_num_threads(Num_Threads);
 	#pragma omp parallel for
-	for (int32_t i = 0; i < AdjustmentList.size(); i++){
+	for (uint32_t i = 0; i < AdjustmentList.size(); i++){
 		if (min(PValuesPos[i], PValuesNeg[i]) > 0.01 || min(PValuesPos[i], PValuesNeg[i]) < -0.5)
 			continue;
 		// calculate approximate p value
@@ -1165,7 +1165,7 @@ void DistTest_t::PValue_overall_empirical(const vector<int32_t>& AdjustmentList,
 	}
 	// count small p values due to lack of sampling
 	count = 0;
-	for (int32_t i = 0; i < AdjustmentList.size(); i++) {
+	for (uint32_t i = 0; i < AdjustmentList.size(); i++) {
 		if (min(PValuesPos[i], PValuesNeg[i]) > 0.01 || min(PValuesPos[i], PValuesNeg[i]) < -0.5)
 			count++;
 	}
@@ -1182,7 +1182,7 @@ void BHAdjusting(const vector<PRegion_t>& RawPRegions, vector<PRegion_t>& Adjust
 {
 	// clear variable
 	AdjustedPRegions.clear();
-	for (int32_t i = 0; i < RawPRegions.size(); i++) {
+	for (uint32_t i = 0; i < RawPRegions.size(); i++) {
 		PRegion_t tmp;
 		AdjustedPRegions.push_back(tmp);
 	}
@@ -1191,18 +1191,18 @@ void BHAdjusting(const vector<PRegion_t>& RawPRegions, vector<PRegion_t>& Adjust
 	std::iota(Indexes.begin(), Indexes.end(), 0);
 	vector<PRegion_t> RawPRegions_sort(RawPRegions.cbegin(), RawPRegions.cend());
 	sort(Indexes.begin(), Indexes.end(), [&RawPRegions](int32_t a, int32_t b){return RawPRegions[a].Pvalue > RawPRegions[b].Pvalue;} );
-	for (int32_t i = 0; i < RawPRegions.size(); i++)
+	for (uint32_t i = 0; i < RawPRegions.size(); i++)
 		RawPRegions_sort[i] = RawPRegions[Indexes[i]];
 	// BH adjustment
 	double cumulative_min = 1;
 	int32_t n = RawPRegions_sort.size();
-	for(int32_t i = 0; i < RawPRegions_sort.size(); i++){
+	for(uint32_t i = 0; i < RawPRegions_sort.size(); i++){
 		double adjp = min(cumulative_min, n / (n-i) * RawPRegions_sort[i].Pvalue);
 		RawPRegions_sort[i].Pvalue = adjp;
 		cumulative_min = min(cumulative_min, adjp);
 	}
 	// add to result
-	for(int32_t i = 0; i < RawPRegions_sort.size(); i++){
+	for(uint32_t i = 0; i < RawPRegions_sort.size(); i++){
 		AdjustedPRegions[Indexes[i]] = RawPRegions_sort[i];
 	}
 };
@@ -1217,16 +1217,16 @@ void BHAdjusting(const vector<double>& RawPvalues, vector<double>& AdjustedPvalu
 	std::iota(Indexes.begin(), Indexes.end(), 0);
 	vector<double> RawPvalues_sort(RawPvalues.cbegin(), RawPvalues.cend());
 	sort(Indexes.begin(), Indexes.end(), [&RawPvalues_sort](int32_t a, int32_t b){return RawPvalues_sort[a] > RawPvalues_sort[b];} );
-	for (int32_t i = 0; i < RawPvalues.size(); i++)
+	for (uint32_t i = 0; i < RawPvalues.size(); i++)
 		RawPvalues_sort[i] = RawPvalues[Indexes[i]];
 	// BH adjustment
-	for(int32_t i = 0; i < RawPvalues_sort.size(); i++)
+	for(uint32_t i = 0; i < RawPvalues_sort.size(); i++)
 		RawPvalues_sort[i] = RawPvalues_sort.size() / ((int32_t)RawPvalues_sort.size() - i) * RawPvalues_sort[i];
 	// cumulative min
-	for (int32_t i = 1; i < RawPvalues_sort.size(); i++)
+	for (uint32_t i = 1; i < RawPvalues_sort.size(); i++)
 		RawPvalues_sort[i] = min(RawPvalues_sort[i-1], RawPvalues_sort[i]);
 	// add to result
-	for(int32_t i = 0; i < RawPvalues_sort.size(); i++)
+	for(uint32_t i = 0; i < RawPvalues_sort.size(); i++)
 		AdjustedPvalues[Indexes[i]] = RawPvalues_sort[i];
 };
 
@@ -1243,16 +1243,16 @@ vector<int32_t> ReduceAssignmentList(const vector<int32_t>& AssignmentList, cons
 	// collect significant salmon and LP
 	vector<int32_t> Significant_salmon;
 	vector<int32_t> Significant_lp;
-	for (int32_t i = 0; i < AdjPValuesPos_salmon.size(); i++)
+	for (uint32_t i = 0; i < AdjPValuesPos_salmon.size(); i++)
 		if (AdjPValuesPos_salmon[i].Pvalue < PvalueThresh)
 			Significant_salmon.push_back(AdjPValuesPos_salmon[i].TID);
-	for (int32_t i = 0; i < AdjPValuesNeg_salmon.size(); i++)
+	for (uint32_t i = 0; i < AdjPValuesNeg_salmon.size(); i++)
 		if (AdjPValuesNeg_salmon[i].Pvalue < PvalueThresh)
 			Significant_salmon.push_back(AdjPValuesNeg_salmon[i].TID);
-	for (int32_t i = 0; i < AdjPValuesPos_lp.size(); i++)
+	for (uint32_t i = 0; i < AdjPValuesPos_lp.size(); i++)
 		if (AdjPValuesPos_lp[i].Pvalue < PvalueThresh)
 			Significant_lp.push_back(AdjPValuesPos_lp[i].TID);
-	for (int32_t i = 0; i < AdjPValuesNeg_lp.size(); i++)
+	for (uint32_t i = 0; i < AdjPValuesNeg_lp.size(); i++)
 		if (AdjPValuesNeg_lp[i].Pvalue < PvalueThresh)
 			Significant_lp.push_back(AdjPValuesNeg_lp[i].TID);
 	sort(Significant_salmon.begin(), Significant_salmon.end());

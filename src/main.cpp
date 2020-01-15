@@ -81,7 +81,7 @@ int32_t main (int32_t argc, char* argv[])
 		map<string,int32_t>::const_iterator itidx = TransIndex.find(ittpm->first);
 		assert(itidx != TransIndex.cend());
 		double sumreads = 0;
-		for (int32_t i=0; i<Observed[itidx->second].size(); i++)
+		for (uint32_t i=0; i<Observed[itidx->second].size(); i++)
 			sumreads += Observed[itidx->second][i];
 		if (fabs(ittpm->second - 1.0*sumreads/Observed[itidx->second].size()) > 1e-2)
 			cout << (ittpm->first) <<"\t"<< (ittpm->second) <<"\t"<< (itidx->second) <<"\t"<< sumreads <<"\t"<< (Observed[itidx->second].size()) <<"\n";
@@ -95,7 +95,7 @@ int32_t main (int32_t argc, char* argv[])
 	vector< Eigen::VectorXd > ExpectedBinNorm = dt.GetExpectedBinNorm();
 	WriteAdjustExpectedDistribution(OutputPrefix+"_expectedbinnorm.dat", dt.TransNames, ExpectedBinNorm);
 	vector<Eigen::MatrixXd> Covariance = dt.GetCovariance();
-	vector<int32_t> LenClass = dt.GetLenClass();
+	const vector<uint32_t>& LenClass = dt.GetLenClass();
 	WriteCovarianceMatrix(OutputPrefix+"_covariance.dat", dt.TransNames, LenClass, Covariance);
 
 	// calculate P value based on salmon assignment
@@ -117,7 +117,7 @@ int32_t main (int32_t argc, char* argv[])
 	// collect initial adjustment list
 	vector<int32_t> AdjustmentList;
 	vector<string> RelatedGenes;
-	for (int32_t i = 0; i < AdjPValuesPos_salmon.size(); i++){
+	for (uint32_t i = 0; i < AdjPValuesPos_salmon.size(); i++){
 		if (AdjPValuesPos_salmon[i].Pvalue < PvalueThresh){
 			assert(AdjPValuesPos_salmon[i].TID < Transcripts.size());
 			map<string,string>::iterator itmap = TransGeneMap.find(Transcripts[AdjPValuesPos_salmon[i].TID].TransID);
@@ -125,7 +125,7 @@ int32_t main (int32_t argc, char* argv[])
 			RelatedGenes.push_back( itmap->second );
 		}
 	}
-	for (int32_t i = 0; i < AdjPValuesNeg_salmon.size(); i++){
+	for (uint32_t i = 0; i < AdjPValuesNeg_salmon.size(); i++){
 		if (AdjPValuesNeg_salmon[i].Pvalue < PvalueThresh){
 			assert(AdjPValuesNeg_salmon[i].TID < Transcripts.size());
 			map<string,string>::iterator itmap = TransGeneMap.find(Transcripts[AdjPValuesNeg_salmon[i].TID].TransID);
@@ -176,18 +176,18 @@ int32_t main (int32_t argc, char* argv[])
 		dt.CalDeletionScore();
 		// sanity check
 		assert(dt.TransCov.size() == dt.DeletionScore_pos.size() && dt.TransCov.size() == dt.DeletionScore_neg.size());
-		for (int32_t i = 0; i < dt.TransCov.size(); i++) {
+		for (uint32_t i = 0; i < dt.TransCov.size(); i++) {
 			if (dt.TransCov[i] < 0.01 && (dt.DeletionScore_pos[i] != -1 || dt.DeletionScore_neg[i] != -1))
 				cout << "Error: low coverage transcript shouldn't be evaluated.\t"<< i <<"\t"<< dt.TransCov[i] <<"\t"<< dt.DeletionScore_pos[i] <<"\t"<< dt.DeletionScore_neg[i] << endl;
 			assert(dt.TransCov[i] >= 0.01 || (dt.DeletionScore_pos[i] == -1 && dt.DeletionScore_neg[i] == -1));
 		}
 		// calculate p value
 		dt.PValue_regional(AdjustmentList, PValuesPos_lp, PValuesNeg_lp);
-		for (int32_t i = 0; i < PValuesPos_salmon.size(); i++) {
+		for (uint32_t i = 0; i < PValuesPos_salmon.size(); i++) {
 			if (!binary_search(AdjustmentList.begin(), AdjustmentList.end(), PValuesPos_salmon[i].TID))
 				PValuesPos_lp.push_back(PValuesPos_salmon[i]);
 		}
-		for (int32_t i = 0; i < PValuesNeg_salmon.size(); i++) {
+		for (uint32_t i = 0; i < PValuesNeg_salmon.size(); i++) {
 			if (!binary_search(AdjustmentList.begin(), AdjustmentList.end(), PValuesNeg_salmon[i].TID))
 				PValuesNeg_lp.push_back(PValuesNeg_salmon[i]);
 		}
@@ -221,11 +221,11 @@ int32_t main (int32_t argc, char* argv[])
 	dt.UpdateObserved(AdjustmentList, newAssignment);
 	dt.CalDeletionScore();
 	dt.PValue_regional(AdjustmentList, PValuesPos_lp, PValuesNeg_lp);
-	for (int32_t i = 0; i < PValuesPos_salmon.size(); i++) {
+	for (uint32_t i = 0; i < PValuesPos_salmon.size(); i++) {
 		if (!binary_search(AdjustmentList.begin(), AdjustmentList.end(), PValuesPos_salmon[i].TID))
 			PValuesPos_lp.push_back(PValuesPos_salmon[i]);
 	}
-	for (int32_t i = 0; i < PValuesNeg_salmon.size(); i++) {
+	for (uint32_t i = 0; i < PValuesNeg_salmon.size(); i++) {
 		if (!binary_search(AdjustmentList.begin(), AdjustmentList.end(), PValuesNeg_salmon[i].TID))
 			PValuesNeg_lp.push_back(PValuesNeg_salmon[i]);
 	}
@@ -236,7 +236,7 @@ int32_t main (int32_t argc, char* argv[])
 
 	// sanity check about coverage and deletion score
 	assert(dt.TransCov.size() == dt.DeletionScore_pos.size() && dt.TransCov.size() == dt.DeletionScore_neg.size());
-	for (int32_t i = 0; i < dt.TransCov.size(); i++) {
+	for (uint32_t i = 0; i < dt.TransCov.size(); i++) {
 		if (dt.TransCov[i] < 0.01 && (dt.DeletionScore_pos[i] != -1 || dt.DeletionScore_neg[i] != -1))
 			cout << "Error: low coverage transcript shouldn't be evaluated.\t"<< i <<"\t"<< dt.TransCov[i] <<"\t"<< dt.DeletionScore_pos[i] <<"\t"<< dt.DeletionScore_neg[i] << endl;
 		assert(dt.TransCov[i] >= 0.01 || (dt.DeletionScore_pos[i] == -1 && dt.DeletionScore_neg[i] == -1));

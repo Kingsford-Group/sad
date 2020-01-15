@@ -64,7 +64,7 @@ void ReadGTF (string GTFfile, vector<Transcript_t>& Transcripts)
 	input.close();
 	// adding extra exon to corresponding transcript
 	map<string,int32_t> TransIndex;
-	for (int32_t i=0; i<Transcripts.size(); i++)
+	for (uint32_t i=0; i<Transcripts.size(); i++)
 		TransIndex[Transcripts[i].TransID] = i;
 	for (vector< pair<string,Exon_t> >::iterator it = ExtraExons.begin(); it != ExtraExons.end(); it++){
 		map<string,int32_t>::iterator itmap = TransIndex.find(it->first);
@@ -119,7 +119,7 @@ void Map_Gene_Trans (const vector<Transcript_t>& Transcripts, map<string,int32_t
 	TransGeneMap.clear();
 	GeneTransMap.clear();
 	// TransIndex
-	for (int32_t i=0; i < Transcripts.size(); i++)
+	for (uint32_t i=0; i < Transcripts.size(); i++)
 		TransIndex[ Transcripts[i].TransID ] = i;
 	// TransGeneMap
 	vector< pair<string,string> > GeneTransIDs; // pair < GeneID, TransID >

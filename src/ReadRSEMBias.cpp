@@ -57,7 +57,7 @@ vector<double> ReadRSEMrspd(string filename)
 			boost::split(strs, line, boost::is_any_of("\t "));
 			assert( strs.size() == stoi(prevline) );
 
-			for (int32_t i = 0; i < strs.size(); i++)
+			for (uint32_t i = 0; i < strs.size(); i++)
 				rspd.push_back( stod(strs[i]) );
 			rspd.reserve( rspd.size() );
 			is_rspd_line = false;
@@ -79,7 +79,9 @@ vector<double> ReadRSEMrspd(string filename)
 	if (rspd.size() == 0)
 		cerr << "Cannot find the rspd information in file " << filename << endl;
 
+#ifndef NDEBUG
 	double sum_rspd = std::accumulate(rspd.begin(), rspd.end(), 0.0);
+#endif
 	assert( fabs(sum_rspd - 1) < 1e-4);
 
 	return rspd;
@@ -96,7 +98,7 @@ vector<double> BiasCorrectTrans(string seq, const vector<double>& rspd)
 	int32_t idx = 0;
 	int32_t start = (int32_t)round(1.0 * idx * seq.size() / rspd.size());
 	int32_t end = (int32_t)round(1.0 * (idx + 1) * seq.size() / rspd.size());
-	for (int32_t i = 0; i < seq.size(); i++) {
+	for (int32_t i = 0; i < (int32_t)seq.size(); i++) {
 		if (i >= end) {
 			idx += 1;
 			start = (int32_t)round(1.0 * idx * seq.size() / rspd.size());
@@ -155,7 +157,7 @@ int32_t main(int32_t argc, char* argv[]){
 
 		// correction
 		map<string, vector<double> > Corrections;
-		for(int32_t i=0; i<TransSequences.size(); i++){
+		for(uint32_t i=0; i<TransSequences.size(); i++){
 			if(TransSequences[i].size() < rspd.size()){
 				cout<<TransNames[i]<<"\t"<<(TransSequences[i].size())<<endl;
 				continue;
