@@ -221,10 +221,10 @@ public:
 		, exp3models(exp3models)
 		, numModels(numModels)
 		{
-			assert((int32_t)obs5models.size()==numModels);
-			assert((int32_t)obs3models.size()==numModels);
-			assert((int32_t)exp5models.size()==numModels);
-			assert((int32_t)exp3models.size()==numModels);
+			assert(obs5models.size()==numModels);
+			assert(obs3models.size()==numModels);
+			assert(exp5models.size()==numModels);
+			assert(exp3models.size()==numModels);
 			ProcessSplines();
 		};
 	void ProcessSplines(){

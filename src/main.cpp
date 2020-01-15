@@ -119,7 +119,7 @@ int32_t main (int32_t argc, char* argv[])
 	vector<string> RelatedGenes;
 	for (uint32_t i = 0; i < AdjPValuesPos_salmon.size(); i++){
 		if (AdjPValuesPos_salmon[i].Pvalue < PvalueThresh){
-			assert(AdjPValuesPos_salmon[i].TID < Transcripts.size());
+			assert(AdjPValuesPos_salmon[i].TID < (int32_t)Transcripts.size());
 			map<string,string>::iterator itmap = TransGeneMap.find(Transcripts[AdjPValuesPos_salmon[i].TID].TransID);
 			assert(itmap != TransGeneMap.end());
 			RelatedGenes.push_back( itmap->second );
@@ -127,7 +127,7 @@ int32_t main (int32_t argc, char* argv[])
 	}
 	for (uint32_t i = 0; i < AdjPValuesNeg_salmon.size(); i++){
 		if (AdjPValuesNeg_salmon[i].Pvalue < PvalueThresh){
-			assert(AdjPValuesNeg_salmon[i].TID < Transcripts.size());
+			assert(AdjPValuesNeg_salmon[i].TID < (int32_t)Transcripts.size());
 			map<string,string>::iterator itmap = TransGeneMap.find(Transcripts[AdjPValuesNeg_salmon[i].TID].TransID);
 			assert(itmap != TransGeneMap.end());
 			RelatedGenes.push_back( itmap->second );

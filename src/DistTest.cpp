@@ -20,7 +20,7 @@ DistTest_t::DistTest_t(const map<string,int32_t>& _TransIndex, const map<string,
 		map<string,int32_t>::const_iterator itlen = _TransLength.find(it->first);
 		assert(itlen != _TransLength.cend());
 		TransLength[it->second] = itlen->second;
-		assert(itlen->second == Expected[it->second].size());
+		assert(itlen->second == (int32_t)Expected[it->second].size());
 	}
 	TransNames.resize(TransIndex.size(), "");
 	for (map<string,int32_t>::const_iterator it = TransIndex.cbegin(); it != TransIndex.cend(); it++)
@@ -137,7 +137,7 @@ DistTest_t::DistTest_t(const map<string,int32_t>& _TransIndex, const map<string,
 		map<string,int32_t>::const_iterator itlen = _TransLength.find(it->first);
 		assert(itlen != _TransLength.cend());
 		TransLength[it->second] = itlen->second;
-		assert(itlen->second == Expected[it->second].size());
+		assert(itlen->second == (int32_t)Expected[it->second].size());
 	}
 	TransNames.resize(TransIndex.size(), "");
 	for (map<string,int32_t>::const_iterator it = TransIndex.cbegin(); it != TransIndex.cend(); it++)
@@ -371,7 +371,7 @@ void DistTest_t::UpdateObserved(const vector< vector<double> >& NewObserved)
 {
 	assert(NewObserved.size() == ObservedBinNorm.size());
 	for (uint32_t i = 0; i < NewObserved.size(); i++){
-		assert(NewObserved[i].size() == TransLength[i]);
+		assert((int32_t)NewObserved[i].size() == TransLength[i]);
 		int32_t len_class = LenClass[i];
 		if (Covariance[len_class].isZero(1e-18))
 			continue;
@@ -407,7 +407,7 @@ void DistTest_t::UpdateObserved(const vector<int32_t>& AdjustmentList, const vec
 {
 	assert(NewObserved.size() == AdjustmentList.size());
 	for (uint32_t i = 0; i < AdjustmentList.size(); i++){
-		assert(NewObserved[i].size() == TransLength[AdjustmentList[i]]);
+		assert((int32_t)NewObserved[i].size() == TransLength[AdjustmentList[i]]);
 		int32_t len_class = LenClass[AdjustmentList[i]];
 		// binning and calculate sum
 		int32_t length = NewObserved[i].size();

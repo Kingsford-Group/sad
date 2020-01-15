@@ -233,7 +233,7 @@ void GetEqTrans(string eqclassfile, map<string,int32_t>& Trans, vector<string>& 
 			boost::split(strs, line, boost::is_any_of("\t"));
 
 			int32_t numrelatedtid=stoi(strs[0]);
-			assert(strs.size() == 2*numrelatedtid+2);
+			assert((int32_t)strs.size() == 2*numrelatedtid+2);
 			vector<int32_t> TIDs(numrelatedtid);
 			for(int32_t i=0; i<numrelatedtid; i++)
 				TIDs[i]=stoi(strs[1+i]);

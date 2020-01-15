@@ -153,7 +153,7 @@ LPReassign_t::LPReassign_t(const map<string,int32_t>& _TransIndex, const map<str
 				count++;
 			}
 		}
-		assert(count == Expected[i].size());
+		assert(count == (int32_t)Expected[i].size());
 		tmpexp /= tmpexp.sum();
 		ExpectedFullNorm.push_back(tmpexp);
 		// observed
@@ -165,7 +165,7 @@ LPReassign_t::LPReassign_t(const map<string,int32_t>& _TransIndex, const map<str
 				count++;
 			}
 		}
-		assert(count == Observed[i].size());
+		assert(count == (int32_t)Observed[i].size());
 		ObservedFull.push_back(tmpobs);
 	}
 
@@ -332,7 +332,7 @@ void LPReassign_t::InitializeJunction(const vector<Transcript_t>& Transcripts, c
 		const vector<Junction_t>& junctions = Gene_Junctions[g];
 		// variables to update
 		vector< Eigen::VectorXd >& obs_full = JunctionObserveFull[g];
-		assert(i == TransIndex.at(t.TransID));
+		assert((int32_t)i == TransIndex.at(t.TransID));
 		int32_t covered_length = 0;
 		for (vector<Exon_t>::const_iterator itexon = t.Exons.cbegin(); itexon != t.Exons.cend(); itexon++) {
 			sum = std::accumulate(this_obs.cbegin() + covered_length, this_obs.cbegin() + covered_length + itexon->EndPos - itexon->StartPos, 0.0);
@@ -398,7 +398,7 @@ void LPReassign_t::InitializeJunction(const vector<Transcript_t>& Transcripts, c
 			// find the tid that contain the junction
 			int32_t tid = -1;
 			for (uint32_t j = 0; j < tids.size(); j++) {
-				assert(JunctionExistence[tids[j]].size() == junctions.size());
+				assert(JunctionExistence[tids[j]].size() == (int32_t)junctions.size());
 				if (JunctionExistence[tids[j]][i]) {
 					tid = tids[j];
 					break;
@@ -834,7 +834,7 @@ std::string Quantify_singlecase_junction_LP(Eigen::MatrixXd& exp, Eigen::VectorX
 		for (uint32_t j = 0; j < relevance[i].size(); j++)
 			diag_relevance(j,j) = relevance[i](j);
 		Eigen::MatrixXd diag_existence = Eigen::MatrixXd::Zero(exp.cols(), exp.cols());
-		assert( existence.size() == exp.cols() );
+		assert( (int32_t)existence.size() == exp.cols() );
 		for (uint32_t j = 0; j < existence.size(); j++)
 			diag_existence(j,j) = existence[j](i);
 		assert(diag_relevance.sum() > 0);
@@ -975,7 +975,7 @@ vector<double> Quantify_singlecase_junction_clp(Eigen::MatrixXd& exp, Eigen::Vec
 		for (int32_t j = 0; j < relevance[i].size(); j++)
 			diag_relevance(j,j) = relevance[i](j);
 		Eigen::MatrixXd diag_existence = Eigen::MatrixXd::Zero(exp.cols(), exp.cols());
-		assert( existence.size() == exp.cols() );
+		assert( (int32_t)existence.size() == exp.cols() );
 		for (uint32_t j = 0; j < existence.size(); j++)
 			diag_existence(j,j) = existence[j](i);
 		assert(diag_relevance.sum() > 0);
@@ -1281,7 +1281,7 @@ vector<double> LPReassign_t::ReassignReads(vector< vector<double> >& newAssignme
 		// convert to separate transcript index based on PositionExistence matrix
 		for(uint32_t i = 0; i < tids.size(); i++){
 			vector<double> tmp;
-			assert(tmp_assign_full.rows() == PositionExistence[tids[i]].size());
+			assert(tmp_assign_full.rows() == (int32_t)PositionExistence[tids[i]].size());
 			for (int32_t j = 0; j < tmp_assign_full.rows(); j++)
 				if (PositionExistence[tids[i]][j])
 					tmp.push_back(tmp_assign_full(j,i));
@@ -1373,7 +1373,7 @@ vector<double> LPReassign_t::ReassignReads(vector< vector<double> >& newAssignme
 		// convert to separate transcript index based on PositionExistence matrix
 		for(uint32_t i = 0; i < tids.size(); i++){
 			vector<double> tmp;
-			assert(tmp_assign_full.rows() == PositionExistence[tids[i]].size());
+			assert(tmp_assign_full.rows() == (int32_t)PositionExistence[tids[i]].size());
 			for (int32_t j = 0; j < tmp_assign_full.rows(); j++)
 				if (PositionExistence[tids[i]][j])
 					tmp.push_back(tmp_assign_full(j,i));
@@ -1494,7 +1494,7 @@ vector<int32_t> LPReassign_t::RefineLPTrans_singlecase(const vector<int32_t>& sh
 				else{
 					assert(lb == PValuesPos_lp.cbegin() || (lb-1)->Pvalue <= it->Pvalue);
 					assert((lb+1) == PValuesPos_lp.cend() || (lb+1)->Pvalue >= it->Pvalue);
-					assert(distance(PValuesPos_lp.cbegin(), lb) <= AdjPValuesPos_lp.size());
+					assert(distance(PValuesPos_lp.cbegin(), lb) <= (int32_t)AdjPValuesPos_lp.size());
 					adjpvalue = AdjPValuesPos_lp[distance(PValuesPos_lp.cbegin(), lb)].Pvalue;
 				}
 				if (adjpvalue < PvalueThresh)
@@ -1508,7 +1508,7 @@ vector<int32_t> LPReassign_t::RefineLPTrans_singlecase(const vector<int32_t>& sh
 				else{
 					assert(lb == PValuesNeg_lp.cbegin() || (lb-1)->Pvalue <= it->Pvalue);
 					assert((lb+1) == PValuesNeg_lp.cend() || (lb+1)->Pvalue >= it->Pvalue);
-					assert(distance(PValuesNeg_lp.cbegin(), lb) <= AdjPValuesNeg_lp.size());
+					assert(distance(PValuesNeg_lp.cbegin(), lb) <= (int32_t)AdjPValuesNeg_lp.size());
 					adjpvalue = AdjPValuesNeg_lp[distance(PValuesNeg_lp.cbegin(), lb)].Pvalue;
 				}
 				if (adjpvalue < PvalueThresh)

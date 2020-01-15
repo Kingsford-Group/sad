@@ -100,7 +100,7 @@ void ReadCorrection(string correctionfile, const map<string,int32_t>& TransIndex
 		// find corresponding position
 		map<string,int32_t>::const_iterator itidx = TransIndex.find(name);
 		if (itidx != TransIndex.cend()){
-			assert(Expected[itidx->second].size() == seqlen);
+			assert((int32_t)Expected[itidx->second].size() == seqlen);
 			Expected[itidx->second] = mydata;
 		}
 	}
@@ -322,7 +322,7 @@ void ReadNewAssignment_Distribution_old(string numreadsfile, string distfile, co
 	ifstream input2(distfile, ios::binary);
 	int32_t numtrans;
 	input2.read((char*)&numtrans, sizeof(int32_t));
-	assert(numtrans == AdjustmentList.size());
+	assert(numtrans == (int32_t)AdjustmentList.size());
 	for (int32_t i = 0; i < numtrans; i++) {
 		int32_t seqlen;
 		input2.read((char*)&seqlen, sizeof(int32_t));
@@ -412,7 +412,7 @@ void WriteOverallPvalue(string outputfile, const vector<Transcript_t>& Transcrip
 		assert(oriregion_pos.first >= 0 && oriregion_pos.second >= 0);
 		assert(oriregion_neg.first >= 0 && oriregion_neg.second >= 0);
 		// write to file
-		assert(count < NNPvaluesPos.size());
+		assert(count < (int32_t)NNPvaluesPos.size());
 		output << Transcripts[i].TransID <<"\t"<< TransCov[i] <<"\t"<< (dt.DeletionScore_pos[i]) <<"\t"<< oriregion_pos.first <<"\t"<< oriregion_pos.second <<"\t";
 		output << NNPvaluesPos[count] <<"\t"<< NNAdjPvaluePos[count] <<"\t";
 		output << (dt.DeletionScore_neg[i]) <<"\t"<< oriregion_neg.first <<"\t"<< oriregion_neg.second <<"\t";
@@ -420,7 +420,7 @@ void WriteOverallPvalue(string outputfile, const vector<Transcript_t>& Transcrip
 		// update counter
 		count ++;
 	}
-	assert(count == NNPvaluesPos.size());
+	assert(count == (int32_t)NNPvaluesPos.size());
 	output.close();
 };
 
@@ -480,7 +480,7 @@ void WriteOverallPvalue(string outputfile, const vector<int32_t>& AdjustmentList
 		assert(oriregion_pos.first >= 0 && oriregion_pos.second >= 0);
 		assert(oriregion_neg.first >= 0 && oriregion_neg.second >= 0);
 		// write to file
-		assert(count < NNPvaluesPos.size());
+		assert(count < (int32_t)NNPvaluesPos.size());
 		output << Transcripts[ind].TransID <<"\t"<< TransCov[ind] <<"\t"<< (dt.DeletionScore_pos[ind]) <<"\t"<< oriregion_pos.first <<"\t"<< oriregion_pos.second <<"\t";
 		output << NNPvaluesPos[count] <<"\t"<< NNAdjPvaluePos[count] <<"\t";
 		output << (dt.DeletionScore_neg[ind]) <<"\t"<< oriregion_neg.first <<"\t"<< oriregion_neg.second <<"\t";
@@ -488,7 +488,7 @@ void WriteOverallPvalue(string outputfile, const vector<int32_t>& AdjustmentList
 		// update counter
 		count ++;
 	}
-	assert(count == NNPvaluesPos.size());
+	assert(count == (int32_t)NNPvaluesPos.size());
 	output.close();
 };
 
