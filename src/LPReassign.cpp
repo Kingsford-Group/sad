@@ -8,6 +8,7 @@ See LICENSE for licensing.
 #include "LPReassign.hpp"
 #include "Transcript.hpp"
 #include "DistTest.hpp"
+#include "logtime.hpp"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -562,7 +563,7 @@ std::string Quantify_singlecase_LP(Eigen::MatrixXd& exp, Eigen::VectorXd& obs) {
   for(int i = 0; i < exp.rows(); ++i)
     LP << 0 << " <= c" << i << " <= " << sum << '\n';
 
-  LP << "General\n";
+  LP << "Generals\n";
   for(int i = 0; i < exp.cols(); ++i)
     LP << 'x' << i << '\n';
   for(int i = 0; i < exp.rows(); ++i)
@@ -573,11 +574,88 @@ std::string Quantify_singlecase_LP(Eigen::MatrixXd& exp, Eigen::VectorXd& obs) {
 }
 
 #ifdef HAVE_CLP
-vector<double> Quantify_singlecase_clp(Eigen::MatrixXd& exp, Eigen::VectorXd& obs) {
-  assert(exp.rows() == obs.size());
-  const auto path = Quantify_singlecase_LP(exp, obs);
-  // create CLP environment
-  ClpSimplex model;
+vector<double> Quantify_singlecase_clp_file(Eigen::MatrixXd& exp, Eigen::VectorXd& obs) {
+	assert(exp.rows() == obs.size());
+	cout << logtime() << " Quantify_singlecase_clp" << endl;
+	const auto path = Quantify_singlecase_LP(exp, obs);
+
+	try{
+		// create CLP environment
+		ClpSimplex model;
+		if(model.readLp(path.c_str()))
+			throw std::runtime_error("Invalid LP problem");
+
+		ClpSolve solvectl;
+		solvectl.setSolveType(ClpSolve::usePrimal);
+		solvectl.setPresolveType(ClpSolve::presolveOn);
+		model.initialSolve(solvectl);
+
+		std::string modelName;
+		int numberColumns = model.numberColumns();
+		double* columnPrimal = model.primalColumnSolution();
+		model.getStrParam(ClpProbName, modelName);
+		std::cout << "Model " << modelName << " has " << model.numberRows() << " rows and " <<
+			numberColumns << " columns" << std::endl;
+		const std::vector<std::string>& columnNames = *model.columnNames();
+
+	}catch(CoinError& e){
+		std::cerr << "Coinerror: " << e.message() << '\n'
+			  << e.fileName() << ':' << e.lineNumber() << ':' << e.className() << '.' << e.methodName() << '\n';
+		exit(1);
+	}
+	exit(0);
+}
+
+vector<double> Quantify_singlecase_clp(Eigen::MatrixXd &exp, Eigen::VectorXd &obs) {
+	assert(exp.rows() == obs.size());
+	const int32_t nb_x = exp.cols(), nb_c = exp.rows();
+	const int32_t x_off = 0, c_off = nb_x;
+	const int32_t nb_rows = 2 * nb_c;
+
+	ClpPackedMatrix matrix(new CoinPackedMatrix);
+	matrix.setDimensions(nb_rows, nb_x + nb_c);
+
+	std::vector<double> rowup(nb_rows);            // Rows upper bounds
+	std::vector<double> colup(nb_rows, obs.sum()); // Columns upper bounds
+	std::vector<double> obj(nb_rows, 1.0);
+	for (int32_t i = 0; i < nb_x; ++i)
+		obj[x_off + i] = 0.0;
+
+	int32_t row_index = 0;
+	for(int32_t i = 0; i < nb_c; ++i) {
+		// set up constraints
+		// |  T_{d-by-n}  -E_{d-by-d} |   |X|   <=   |  Y_{d-by-1}  |
+		//                                |C|
+		for(int32_t j = 0; j < nb_x; ++j)
+			matrix.modifyCoefficient(row_index, x_off + j, exp(i, j));
+		matrix.modifyCoefficient(row_index, c_off + i, -1.0);
+		rowup[row_index] = obs(i);
+		++row_index;
+
+		// | -T_{d-by-n}  -E_{d-by-d} |   |X|   <=   | -Y_{d-by-1}  |
+		//                                |C|
+		for(int32_t j = 0; j < nb_x; ++j)
+			matrix.modifyCoefficient(row_index, x_off + j, -exp(i, j));
+		matrix.modifyCoefficient(row_index, c_off + i, -1.0);
+		rowup[row_index] = -obs(i);
+		++row_index;
+	}
+
+	ClpSimplex model;
+	model.loadProblem(matrix, NULL, colup.data(), obj.data(), NULL, rowup.data());
+	model.setOptimizationDirection(1.0); // Minimization
+	//	model.primal();
+	model.initialSolve();
+	const double* sol = model.getColSolution();
+	std::vector<double> alpha(&sol[x_off], &sol[x_off + nb_x]);
+	for (int32_t i = 0; i < exp.cols(); i++) {
+		assert( alpha[i] >= -1e-4);
+		if (alpha[i] <= 0)
+			alpha[i] = 1e-8;
+	}
+
+	return alpha;
+
 }
 #endif
 
@@ -682,6 +760,7 @@ vector<double> Quantify_singlecase_junction_grb(Eigen::MatrixXd& exp, Eigen::Vec
 	}
 	// solve the LP model
 	model.optimize();
+
 	// collect quantification alpha
 	vector<double> alpha(exp.cols(), 0);
 	for (int32_t i = 0; i < exp.cols(); i++)
@@ -696,10 +775,249 @@ vector<double> Quantify_singlecase_junction_grb(Eigen::MatrixXd& exp, Eigen::Vec
 };
 #endif
 
+std::string Quantify_singlecase_junction_LP(Eigen::MatrixXd& exp, Eigen::VectorXd& obs, const vector< Eigen::VectorXi >& relevance,
+					    const vector< Eigen::VectorXd >& obs_bin, const vector< Eigen::VectorXi >& existence) {
+	static const std::string path("quantify_singlecase.lp"); // XXX Should be a temp file!
+	std::ofstream LP(path);
+	if(!LP.good())
+		throw std::runtime_error("Failed to create LP file");
+
+	// Objective
+	LP << "Minimize\n"
+	   << "obj: ";
+	for(int32_t i = 0; i < exp.rows(); ++i)
+		LP << (i > 0 ? " + " : "") << 'c' << i;
+	for (int32_t i = 0; i < obs_bin.size(); i++) {
+		for (int32_t j = 0; j < exp.rows(); j++)
+			LP << " + cjunctioni" << i << 'j' << j;
+	}
+	LP << '\n';
+
+	// set up constraints
+	LP << "Subject To\n";
+	// |  T_{d-by-n}  -E_{d-by-d} |   |X|   <=   |  Y_{d-by-1}  |
+	//                                |C|
+	// and
+	// | -T_{d-by-n}  -E_{d-by-d} |   |X|   <=   | -Y_{d-by-1}  |
+	//                                |C|
+	for(int32_t i = 0; i < exp.rows(); ++i) {
+		//		LP << "const" << (2*i) << ": ";
+		bool plus = false;
+		for(int32_t j = 0; j < exp.cols(); ++j) {
+			if(exp(i, j) == 0.0) continue;
+			LP << (plus ? " + " : "") << exp(i, j) << " x" << j;
+			plus = true;
+		}
+		if(plus) {
+			LP << " - c" << i << " <= " << obs(i) << '\n';
+		} else {
+			// No x variables in this inequality. This
+			// combined with the next constraints means
+			// that ci is equal to obs(i). Add it here and
+			// skip the next set of constraints.
+			LP << 'c' << i << " = " << obs(i) << '\n';
+			continue;
+		}
+		//		LP << "const" << (2*i + 1) << ": ";
+		plus = false;
+		for (int32_t j = 0; j < exp.cols(); j++) {
+			if(exp(i, j) == 0.0) continue;
+			LP << (plus ? " + " : "") << -exp(i,j) << " x" << j;
+			plus = true;
+		}
+		LP << " - c" << i << " <= " << -obs(i) << '\n';
+	}
+
+	// comparing the linear combination of expected distribution to the support of each junction
+	for (int32_t i = 0; i < obs_bin.size(); i++) {
+		Eigen::MatrixXd diag_relevance = Eigen::MatrixXd::Zero(relevance[i].size(), relevance[i].size());
+		for (int32_t j = 0; j < relevance[i].size(); j++)
+			diag_relevance(j,j) = relevance[i](j);
+		Eigen::MatrixXd diag_existence = Eigen::MatrixXd::Zero(exp.cols(), exp.cols());
+		assert( existence.size() == exp.cols() );
+		for (int32_t j = 0; j < existence.size(); j++)
+			diag_existence(j,j) = existence[j](i);
+		assert(diag_relevance.sum() > 0);
+		Eigen::MatrixXd m = diag_relevance * exp * diag_existence;
+		assert(m.rows() == exp.rows() && m.cols() == exp.cols());
+		for (int32_t j = 0; j < m.rows(); j++) {
+			// | relevance diagonal * T_{d-by-n} * existence diagonal  -E_{d-by-d} |    |       X      |    <=     |obs_bin_{junction i}|
+			//                                                                          |C_{junction i}|
+			//			LP << "const_junction_" << i << '_' << j << ": ";
+			bool plus = false;
+			for (int32_t k = 0; k < m.cols(); k++) {
+				if(m(j, k) == 0.0) continue;
+				LP << (plus ? " + " : "") << m(j, k) << " x" << k;
+				plus = true;
+			}
+			if(plus) {
+				LP << " - cjunctioni" << i << 'j' << j << " <= " << obs_bin[i](j) << '\n';
+			} else {
+				// Same as above, equality instead of 2 inequalities
+				LP << " cjunctioni" << i << 'j' << j << " = " << obs_bin[i](j) << '\n';
+				continue;
+			}
+
+			// | -relevance diagonal * T_{d-by-n} * existence diagonal  -E_{d-by-d} |    |       X      |    <=     |-obs_bin_{junction i}|
+			//                                                                           |C_{junction i}|
+			//			LP << "const_junction_" << i << '_' << (j + exp.rows()) << ": ";
+			plus = false;
+			for (int32_t k = 0; k < m.cols(); k++) {
+				if(m(j, k) == 0.0) continue;
+				LP << (plus ? " + " : "") << -m(j,k) << " x" << k;
+				plus = true;
+			}
+			LP << " - cjunctioni" << i << 'j' << j << " <= " << -obs_bin[i](j) << '\n';
+		}
+	}
+
+	LP << "Bounds\n";
+	for(int32_t i = 0; i < exp.cols(); i++)
+		LP << "0 <= x" << i << " <= " << obs.sum() << '\n';
+	for (int32_t i = 0; i < exp.rows(); i++)
+		LP << "0 <= c" << i << " <= " << obs.sum() << '\n';
+	for (int32_t i = 0; i < obs_bin.size(); i++) {
+		for (int32_t j = 0; j < exp.rows(); j++)
+			LP << "0 <= cjunctioni" << i << 'j' << j << " <= " << obs.sum() << '\n';
+	}
+
+	// LP << "Generals\n";
+	// for(int32_t i = 0; i < exp.cols(); i++)
+	// 	LP << 'x' << i << '\n';
+	// for (int32_t i = 0; i < exp.rows(); i++)
+	// 	LP << 'c' << i << '\n';
+	// // variable for junctions
+	// for (int32_t i = 0; i < obs_bin.size(); i++) {
+	// 	for (int32_t j = 0; j < exp.rows(); j++)
+	// 		LP << "cjunctioni" << i << 'j' << j << '\n';
+	// }
+
+	LP << "End\n";
+
+
+	return path;
+}
+
 #ifdef HAVE_CLP
-vector<double> Quantify_singlecase_junction_clp(Eigen::MatrixXd& exp, Eigen::VectorXd& obs, const vector< Eigen::VectorXi >& relevance, 
-                                                const vector< Eigen::VectorXd >& obs_bin, const vector< Eigen::VectorXi >& existence) {
-  throw std::runtime_error("CLP not yet implemented");
+vector<double> Quantify_singlecase_junction_clp_file(Eigen::MatrixXd& exp, Eigen::VectorXd& obs, const vector< Eigen::VectorXi >& relevance, 
+						     const vector< Eigen::VectorXd >& obs_bin, const vector< Eigen::VectorXi >& existence) {
+	cout << logtime() << " Quantify_singlecase_clp" << endl;
+	const auto path = Quantify_singlecase_junction_LP(exp, obs, relevance, obs_bin, existence);
+
+	try {
+		// create CLP environment
+		ClpSimplex model;
+		if(model.readLp(path.c_str()))
+			throw std::runtime_error("Invalid LP problem");
+
+		ClpSolve solvectl;
+		solvectl.setSolveType(ClpSolve::usePrimal);
+		solvectl.setPresolveType(ClpSolve::presolveOn);
+		model.initialSolve(solvectl);
+
+		std::string modelName;
+		int numberColumns = model.numberColumns();
+		double* columnPrimal = model.primalColumnSolution();
+		model.getStrParam(ClpProbName, modelName);
+		std::cout << "Model " << modelName << " has " << model.numberRows() << " rows and " <<
+			numberColumns << " columns" << std::endl;
+		const std::vector<std::string>& columnNames = *model.columnNames();
+		for(int i = 0; i < numberColumns; ++i)
+			std::cout << columnNames[i] << ' ' << columnPrimal[i] << '\n';
+	}catch(CoinError& e){
+		std::cerr << "Coinerror: " << e.message() << '\n'
+			  << e.fileName() << ':' << e.lineNumber() << ':' << e.className() << '.' << e.methodName() << '\n';
+		exit(1);
+	}
+
+	exit(0);
+}
+
+vector<double> Quantify_singlecase_junction_clp(Eigen::MatrixXd& exp, Eigen::VectorXd& obs, const vector< Eigen::VectorXi >& relevance,
+						const vector< Eigen::VectorXd >& obs_bin, const vector< Eigen::VectorXi >& existence) {
+	const int32_t	nb_x	= exp.cols(), nb_c = exp.rows(), nb_junction = obs_bin.size() * exp.rows();
+	const int32_t	x_off	= 0, c_off = nb_x, junction_off = nb_x + nb_c;
+	const int32_t	nb_rows = 2 * nb_c + 2 * nb_junction;
+
+	ClpPackedMatrix matrix(new CoinPackedMatrix);
+	matrix.setDimensions(nb_rows, nb_x + nb_c + nb_junction);
+
+	std::vector<double> rowup(nb_rows); // Rows upper bounds
+	std::vector<double> colup(nb_rows, obs.sum()); // Columns upper bounds
+	std::vector<double> obj(nb_rows, 1.0);
+
+	for(int32_t i = 0; i < nb_x; ++i)
+		obj[x_off + i] = 0.0;
+
+	// |  T_{d-by-n}  -E_{d-by-d} |   |X|   <=   |  Y_{d-by-1}  |
+	//                                |C|
+	// and
+	// | -T_{d-by-n}  -E_{d-by-d} |   |X|   <=   | -Y_{d-by-1}  |
+	//                                |C|
+	int32_t row_index = 0;
+	for (int32_t i = 0; i < nb_c; ++i) {
+		for (int32_t j = 0; j < nb_x; j++)
+			matrix.modifyCoefficient(row_index, x_off + j, exp(i, j));
+		matrix.modifyCoefficient(row_index, c_off + i, -1.0);
+		rowup[row_index] = obs(i);
+		++row_index;
+
+		for(int32_t j = 0; j < nb_x; j++)
+			matrix.modifyCoefficient(row_index, x_off + j, -exp(i, j));
+		matrix.modifyCoefficient(row_index, c_off + i, -1.0);
+		rowup[row_index] = -obs(i);
+		++row_index;
+	}
+
+		// comparing the linear combination of expected distribution to the support of each junction
+	for (int32_t i = 0; i < obs_bin.size(); i++) {
+		Eigen::MatrixXd diag_relevance = Eigen::MatrixXd::Zero(relevance[i].size(), relevance[i].size());
+		for (int32_t j = 0; j < relevance[i].size(); j++)
+			diag_relevance(j,j) = relevance[i](j);
+		Eigen::MatrixXd diag_existence = Eigen::MatrixXd::Zero(exp.cols(), exp.cols());
+		assert( existence.size() == exp.cols() );
+		for (int32_t j = 0; j < existence.size(); j++)
+			diag_existence(j,j) = existence[j](i);
+		assert(diag_relevance.sum() > 0);
+		Eigen::MatrixXd m = diag_relevance * exp * diag_existence;
+		assert(m.rows() == exp.rows() && m.cols() == exp.cols());
+
+		// | relevance diagonal * T_{d-by-n} * existence diagonal  -E_{d-by-d} |    |       X      |    <=     |obs_bin_{junction i}|
+		//                                                                          |C_{junction i}|
+		for (int32_t j = 0; j < nb_c; j++) {
+			for (int32_t k = 0; k < nb_x; k++)
+				matrix.modifyCoefficient(row_index, x_off + k, m(j, k));
+			matrix.modifyCoefficient(row_index, junction_off + i * nb_c + j, -1.0);
+			rowup[row_index] = obs_bin[i](j);
+			++row_index;
+		}
+		// | -relevance diagonal * T_{d-by-n} * existence diagonal  -E_{d-by-d} |    |       X      |    <=     |-obs_bin_{junction i}|
+		//                                                                           |C_{junction i}|
+		for (int32_t j = 0; j < nb_c; j++) {
+			for (int32_t k = 0; k < nb_x; k++)
+				matrix.modifyCoefficient(row_index, x_off + k, -m(j, k));
+			matrix.modifyCoefficient(row_index, junction_off + i * nb_c + j, -1.0);
+			rowup[row_index] = -obs_bin[i](j);
+			++row_index;
+		}
+	}
+	assert(row_index == nb_rows);
+
+	ClpSimplex model;
+	model.loadProblem(matrix, NULL, colup.data(), obj.data(), NULL, rowup.data());
+	model.setOptimizationDirection(1.0); // Minimization
+	//	model.primal();
+	model.initialSolve();
+	const auto sol = model.getColSolution();
+
+	std::vector<double> alpha(&sol[x_off], &sol[x_off + nb_x]);
+	for (int32_t i = 0; i < exp.cols(); i++) {
+		assert( alpha[i] >= -1e-4);
+		if (alpha[i] <= 0)
+			alpha[i] = 1e-8;
+	}
+
+	return alpha;
 }
 #endif
 

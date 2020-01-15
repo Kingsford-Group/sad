@@ -6,6 +6,7 @@ See LICENSE for licensing.
 
 #include "DistTest.hpp"
 #include "LPReassign.hpp"
+#include "logtime.hpp"
 
 using namespace std;
 
@@ -944,36 +945,31 @@ pair<double, double> DistTest_t::SinglePvalue_overall_empirical(int32_t ind, int
 
 void DistTest_t::PValue_regional(vector<PRegion_t>& PValuesPos, vector<PRegion_t>& PValuesNeg)
 {
-	time_t CurrentTime;
-	string CurrentTimeStr;
-	time(&CurrentTime);
-	CurrentTimeStr=ctime(&CurrentTime);
-	cout<<"["<<CurrentTimeStr.substr(0, CurrentTimeStr.size()-1)<<"] "<<"Calculating regional P-value."<<endl;
+	cout<< logtime() << " Calculating regional P-value. "
+	    << Num_Threads << ' ' << TransNames.size() <<endl;
 
 	// clear variables
 	PValuesPos.clear();
 	PValuesNeg.clear();
 	// calculate p value
-	mutex PValues_mutex;
+	mutex PValues_mutex_pos, PValues_mutex_neg;
 	omp_set_num_threads(Num_Threads);
 	#pragma omp parallel for
 	for (int32_t i = 0; i < TransNames.size(); i++){
 		vector<PRegion_t> tmp_pos = SinglePvalue_regional_pos(i);
 		{
-			lock_guard<std::mutex> guard(PValues_mutex);
+			lock_guard<std::mutex> guard(PValues_mutex_pos);
 			PValuesPos.insert(PValuesPos.end(), tmp_pos.begin(), tmp_pos.end());
 		}
 		vector<PRegion_t> tmp_neg = SinglePvalue_regional_neg(i);
 		{
-			lock_guard<std::mutex> guard(PValues_mutex);
+			lock_guard<std::mutex> guard(PValues_mutex_neg);
 			PValuesNeg.insert(PValuesNeg.end(), tmp_neg.begin(), tmp_neg.end());
 		}
 	}
 
-	time(&CurrentTime);
-	CurrentTimeStr=ctime(&CurrentTime);
-	cout << "[" << CurrentTimeStr.substr(0, CurrentTimeStr.size()-1) << "] " << "Finish regional P-value calculation. There are ";
-	cout << (PValuesPos.size()) << " positive bins and " << (PValuesNeg.size()) << " negative bins." << "\n";
+	cout << logtime() << " Finish regional P-value calculation. There are "
+	     << (PValuesPos.size()) << " positive bins and " << (PValuesNeg.size()) << " negative bins." << "\n";
 };
 
 

@@ -229,6 +229,8 @@ int32_t ReadBAMStartPos(string bamfile, const map<string, Transcript_t>& transcr
 
 	JunctionBrdy.reserve(JunctionBrdy.size());
 	sort(JunctionBrdy.begin(), JunctionBrdy.end());
+
+	return 0;
 };
 
 

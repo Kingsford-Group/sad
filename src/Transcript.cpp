@@ -32,6 +32,10 @@ void ReadGTF (string GTFfile, vector<Transcript_t>& Transcripts)
 	vector< pair<string,Exon_t> > ExtraExons;
 	// reading GTF file
 	ifstream input(GTFfile);
+	if(!input.good()) {
+		std::cerr << "Failed to open GTF file" << std::endl;
+		exit(1);
+	}
 	string line;
 	string prevtransid = "";
 	while(getline(input, line)) {
@@ -77,8 +81,11 @@ void ReadGTF (string GTFfile, vector<Transcript_t>& Transcripts)
 	time(&CurrentTime);
 	CurrentTimeStr=ctime(&CurrentTime);
 	cout<<"["<<CurrentTimeStr.substr(0, CurrentTimeStr.size()-1)<<"] "<<"Finish reading GTF. Number transcripts = "<<(Transcripts.size())<<endl;
+	if(Transcripts.empty()) {
+		std::cerr << "No transcript found" << std::endl;
+		exit(1);
+	}
 
-	return;
 };
 
 // trim transcripts: salmon mark some transcripts as duplicated and remove them from quantification

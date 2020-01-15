@@ -1,7 +1,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
-AM_CPPFLAGS = $(BOOST_CPPFLAGS) $(EIGEN_CFLAGS) $(JELLYFISH_CFLAGS) $(HTSLIB_CFLAGS) $(GSL_CFLAGS) $(GUROBI_CFLAGS) $(CLP_CFLAGS)
-AM_LDFLAGS = $(BOOST_IOSTREAMS_LDFLAGS) $(HTSLIB_LDFLAGS) $(JELLYFISH_LDFLAGS) $(GSL_LDFLAGS) $(GUROBI_LDFLAGS) $(CLP_CFLAGS)
+AM_CPPFLAGS = $(BOOST_CPPFLAGS) $(EIGEN_CFLAGS) $(JELLYFISH_CFLAGS) $(HTSLIB_CFLAGS) $(GSL_CFLAGS) $(GUROBI_CFLAGS) $(CLP_CFLAGS) -fopenmp
+AM_LDFLAGS = $(BOOST_IOSTREAMS_LDFLAGS) $(HTSLIB_LDFLAGS) $(JELLYFISH_LDFLAGS) $(GSL_LDFLAGS) $(GUROBI_LDFLAGS) $(CLP_CFLAGS) -fopenmp
 LIBS = $(BOOST_IOSTREAMS_LIBS)  $(HTSLIB_LIBS) $(GSL_LIBS) $(GUROBI_LIBS) $(CLP_LIBS) -lz -lm -fopenmp
 
 EXTRA_DIST =
@@ -49,3 +49,6 @@ script_local_subst = sed -e 's,[@]PYTHON3[@],$(PYTHON3),g' \
 	@mkdir -p $(dir $@) && $(script_inst_subst) < $< > $@
 %.py: scripts/%.py
 	$(AM_V_GEN)$(script_local_subst) < $< > $@ && chmod a+x $@
+
+# Extra flag for the development tree
+-include dev.mk
