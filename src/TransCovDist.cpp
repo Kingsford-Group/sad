@@ -608,6 +608,7 @@ int32_t ReadBAMStartPos(string bamfile, const vector<string>& LowQualReadNames, 
 
 	int32_t flag1 = WriteReadBrdy(Trans, TransLength, ReadBrdy, ss);
 	int32_t flag2 = WriteReadBrdy(Trans, TransLength, JunctionBrdy, ss_junction);
+	return 0;
 };
 
 
@@ -927,6 +928,7 @@ int32_t ReadSalmonFragLen(string bamfile, const vector<string>& LowQualReadNames
 	ss.write(name.c_str(), namelen*sizeof(char));
 	ss.write(reinterpret_cast<char*>(poses.data()), vectorlen*sizeof(int32_t));
 	ss.write(reinterpret_cast<char*>(counts.data()), vectorlen*sizeof(double));
+	return 0;
 };
 
 int32_t main(int32_t argc, char* argv[]){

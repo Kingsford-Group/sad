@@ -23,7 +23,7 @@ BOOST_IOSTREAMS
 GUROBI_CHECK
 PKG_CHECK_MODULES([CLP], [clp],
                   [HAVE_CLP=1]
-                  [AC_DEFINE([HAVE_CLP], [1], [COIN-OR LP solver available])]   ,
+                  [AC_DEFINE([HAVE_CLP], [1], [COIN-OR LP solver available])],
                   [HAVE_CLP=])
 
 AS_IF([test x$HAVE_GUROBI = x -a x$HAVE_CLP = x],
