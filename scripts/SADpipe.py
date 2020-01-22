@@ -111,7 +111,7 @@ if __name__=="__main__":
 				eq_file = SalmonDir + "/aux_info/eq_classes.txt"
 				bam_file = SalmonDir + "/mapping.bam"
 				output_file = SalmonDir + "/startpos.dat"
-				p = subprocess.Popen("{}/transcovdist 0 {} {} {} {} {}".format(codedir, GTFfile, quant_file, eq_file, bam_file, output_file), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+				p = subprocess.Popen("{}/transcovdist {} {} {} {} {}".format(codedir, GTFfile, quant_file, eq_file, bam_file, output_file), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 				out, err = p.communicate()
 				if err != b'':
 					print(err)
