@@ -23,11 +23,20 @@ mkdir Installation
 
 
 # install eigen
-echo "Install Eigen library..."
-cd ${Dir}/external
-wget http://bitbucket.org/eigen/eigen/get/3.3.7.tar.gz
-tar -xzvf 3.3.7.tar.gz
-mv $(find . -maxdepth 1 -name "eigen*") eigen_3.3.7
+if $(pkg-config --exists eigen3); then
+	echo "EIGEN library exists."
+else
+	echo "Install Eigen library..."
+	cd ${Dir}/external
+	wget http://bitbucket.org/eigen/eigen/get/3.3.7.tar.gz
+	tar -xzvf 3.3.7.tar.gz
+	mv $(find . -maxdepth 1 -name "eigen*") eigen_3.3.7
+	cd eigen_3.3.7
+	mkdir -p Installation
+	mkdir -p build_dir && cd build_dir
+	cmake -DCMAKE_INSTALL_PREFIX=${Dir}/external/eigen_3.3.7/Installation ../
+	make install
+fi
 
 
 # install gsl
@@ -87,7 +96,7 @@ else
 	svn co https://projects.coin-or.org/svn/Clp/stable/1.17 coin-Clp
 	cd coin-Clp/
 	mkdir Installation
-	./configure -C --prefix=${Dir}/external/Clp-releases-1.17.3/Installation
+	./configure -C --prefix=${Dir}/external/coin-Clp/Installation
 	make
 	make install
 fi
@@ -103,3 +112,6 @@ wget https://kluge.in-chemnitz.de/opensource/spline/spline.h
 # moving all pkg-config files into one folder
 mkdir -p ${Dir}/external/pkgconfig
 cp -n $(find ${Dir}/external/ -name *.pc) ${Dir}/external/pkgconfig/
+
+echo "To configure with CLP, run: configure PKG_CONFIG_PATH=${PKG_CONFIG_PATH}"
+echo "To configure with gurobi, run: configure PKG_CONFIG_PATH=${PKG_CONFIG_PATH} --with-gurobi=<path to gurobi linux64 folder>"
