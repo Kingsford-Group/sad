@@ -7,6 +7,7 @@ See LICENSE for licensing.
 #include "DistTest.hpp"
 #include "LPReassign.hpp"
 #include "logtime.hpp"
+#include "massert.hpp"
 
 using namespace std;
 
@@ -292,10 +293,9 @@ void DistTest_t::AdjustExpected(double nstdthresh)
 				passedIndex.push_back(lenTransIndexes[i][j]);
 		}
 		if (passedIndex.size() <= 10) {
-			if (i > 0)
-				cout << "Warning: not enough transcripts are expressed in length class " << i <<" (" << lenBounds[i-1] <<","<< lenBounds[i] << "). Not inferring the mean and variance of Gaussian error of expected distribution.\n";
-			else
-				cout << "Warning: not enough transcripts are expressed in length class " << i <<" (0" <<","<< lenBounds[i] << "). Not inferring the mean and variance of Gaussian error of expected distribution.\n";
+			cout << "Warning: not enough transcripts are expressed in length class "
+			     << i <<" (" << (i > 0 ? lenBounds[i-1] : 0) << ',' << lenBounds[i]
+			     << "). Not inferring the mean and variance of Gaussian error of expected distribution.\n";
 			// set the observed distribution and coverage to 0
 			for (uint32_t j = 0; j < lenTransIndexes[i].size(); j++) {
 				ObservedBinNorm[lenTransIndexes[i][j]] = Eigen::VectorXd::Zero(ObservedBinNorm[lenTransIndexes[i][j]].size());
@@ -315,10 +315,13 @@ void DistTest_t::AdjustExpected(double nstdthresh)
 		assert(ObservedBinNorm[passedIndex[0]].size() == nBins[i]);
 		Eigen::MatrixXd Shifts(passedIndex.size(), nBins[i] - 1);
 		for (uint32_t j = 0; j < passedIndex.size(); j++){
-			assert(fabs(ObservedBinNorm[passedIndex[j]].sum() - 1) < 1e-8);
-			assert(fabs(ExpectedBinNorm[passedIndex[j]].sum() - 1) < 1e-8);
+			massert(fabs(ObservedBinNorm[passedIndex[j]].sum() - 1) < 1e-8,
+				"Transcript: " << j << ':' << passedIndex[j] << ':' << TransNames[passedIndex[j]] << "sum: " << ObservedBinNorm[passedIndex[j]].sum());
+			massert(fabs(ExpectedBinNorm[passedIndex[j]].sum() - 1) < 1e-8,
+				"Transcript: " << j << ':' << passedIndex[j] << ':' << TransNames[passedIndex[j]] << "sum: " << ExpectedBinNorm[passedIndex[j]].sum());
 			Shifts.row(j) = (ObservedBinNorm[passedIndex[j]] - ExpectedBinNorm[passedIndex[j]]).head(nBins[i] - 1);
-			assert(fabs(Shifts.row(j).sum()) < 2);
+			massert(fabs(Shifts.row(j).sum()) < 2,
+				"Transcript: " << j << ':' << passedIndex[j] << ':' << TransNames[passedIndex[j]] << "sum: " << Shifts.row(j).sum());
 		}
 		// calculate mean shifts of this LenClass
 		Eigen::VectorXd mean_shift = Shifts.colwise().mean();
