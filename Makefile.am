@@ -4,7 +4,7 @@ AM_CPPFLAGS = -std=c++11 $(BOOST_CPPFLAGS) $(EIGEN_CFLAGS) $(JELLYFISH_CFLAGS) $
 AM_LDFLAGS = $(BOOST_IOSTREAMS_LDFLAGS) $(HTSLIB_LDFLAGS) $(JELLYFISH_LDFLAGS) $(GSL_LDFLAGS) $(GUROBI_LDFLAGS) $(CLP_CFLAGS) -fopenmp
 LIBS = $(BOOST_IOSTREAMS_LIBS)  $(HTSLIB_LIBS) $(GSL_LIBS) $(GUROBI_LIBS) $(CLP_LIBS) -lz -lm -fopenmp
 
-EXTRA_DIST = src/spline.h src/logtime.hpp src/massert.hpp
+EXTRA_DIST = src/spline.h src/logtime.hpp src/massert.hpp install-dependencies.sh
 CLEANFILES =
 
 ################
