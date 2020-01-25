@@ -5,6 +5,7 @@ See LICENSE for licensing.
 */
 
 #include <iostream>
+#include <stdexcept>
 #include <vector>
 #include <map>
 #include <cmath>
@@ -529,6 +530,8 @@ vector<double> BiasCorrectTrans_wopos(string seq, const GCBiasModel_t& gcbias, c
 
 void ReadTransSequence(string filename, vector<string>& TransSequences, vector<string>& TransNames){
 	ifstream input(filename);
+	if(!input.good())
+		throw std::runtime_error(string("Can't open transcript sequence file '") + filename + "'");
 	string line;
 	string curname="";
 	string curseq="";
@@ -546,13 +549,19 @@ void ReadTransSequence(string filename, vector<string>& TransSequences, vector<s
 		else
 			curseq+=line;
 	}
-	TransSequences.push_back(curseq);
-	TransNames.push_back(curname);
+	if(!curname.empty()) {
+		TransSequences.push_back(curseq);
+		TransNames.push_back(curname);
+	}
+	if(TransNames.empty())
+		throw std::runtime_error("No transcript sequences");
 };
 
 void ReadSalmonCov(string filename, map<string, double>& SalmonCov){
 	SalmonCov.clear();
 	ifstream input(filename);
+	if(!input.good())
+		throw std::runtime_error(string("Can't open Salmon coverage file '") + filename + "'");
 	string line;
 	int32_t linecount=0;
 	while(getline(input, line)){
@@ -589,6 +598,8 @@ void CorrectNWrite(string filename, vector<string>& TransNames, vector<string>& 
 void CountStartPos(string startposfile, map< string,vector<double> >& StartCount, int32_t binsize){
 	StartCount.clear();
 	ifstream input(startposfile, ios::binary);
+	if(!input.good())
+		throw std::runtime_error(string("Can't open startpos file '" )+ startposfile + "'");
 	int32_t numtrans;
 	input.read((char*)(&numtrans), sizeof(int32_t));
 	cout<<numtrans<<endl;
@@ -623,6 +634,8 @@ void WriteDeviation(string posfile, string singleposfile, string outfile, map< s
 	CountStartPos(posfile, AllCount, binsize);
 
 	ofstream output(outfile);
+	if(!output.good())
+		throw std::runtime_error(string("Can't open posfile '") + posfile + "'");
 	output<<"Name\tbinstart\tbinend\tcov\tcorrectedlen\tnstartstrue\tnsingleendmapped\n";
 
 	for(map< string,vector<double> >::iterator it=Corrections.begin(); it!=Corrections.end(); it++){

@@ -4,7 +4,7 @@
 #include <iostream>
 
 #ifdef NDEBUG
-#define massert(condition, message) 0
+#define massert(condition, message)
 #else
 #define massert(condition, message)                              \
   (!(condition)) ?                                              \
