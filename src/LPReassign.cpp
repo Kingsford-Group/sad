@@ -267,7 +267,7 @@ void LPReassign_t::InitializeJunction(const vector<Transcript_t>& Transcripts, c
 		// find unique junctions
 		sort(junctions.begin(), junctions.end());
 		junctions.resize( distance(junctions.begin(), unique(junctions.begin(), junctions.end()) ) );
-		junctions.reserve( junctions.size() );
+		junctions.shrink_to_fit();
 		// update the gene to junction map
 		Gene_Junctions[g] = junctions;
 		// update the junction existence matrix of each transcript

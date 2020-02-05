@@ -433,7 +433,7 @@ int32_t WriteReadBrdy(map<string,int32_t>& Trans, vector<int32_t>& TransLength, 
 		TransName[it->second]=it->first;
 
 	// sort read boundaries
-	ReadBrdy.reserve(ReadBrdy.size());
+	ReadBrdy.shrink_to_fit();
 	sort(ReadBrdy.begin(), ReadBrdy.end());
 
 	int32_t numtrans=1;
@@ -765,7 +765,6 @@ int32_t ReadSalmonFragLen(string bamfile, const vector<string>& LowQualReadNames
 		TransName[it->second]=it->first;
 
 	vector<Brdy> ReadBrdy;
-	ReadBrdy.reserve(65536);
 
 	// process lower FLD length and upper FLD length corresponding to distribution cutoff
 	int32_t fldLow=0, fldHigh=FLD.size();
@@ -879,7 +878,7 @@ int32_t ReadSalmonFragLen(string bamfile, const vector<string>& LowQualReadNames
 	sam_close(bamreader);
 
 	// compute fragment length mean and std for each transcript
-	ReadBrdy.reserve(ReadBrdy.size());
+	ReadBrdy.shrink_to_fit();
 	sort(ReadBrdy.begin(), ReadBrdy.end());
 
 	int32_t numtrans=1;

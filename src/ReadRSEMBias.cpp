@@ -59,7 +59,7 @@ vector<double> ReadRSEMrspd(string filename)
 
 			for (uint32_t i = 0; i < strs.size(); i++)
 				rspd.push_back( stod(strs[i]) );
-			rspd.reserve( rspd.size() );
+			rspd.shrink_to_fit();
 			is_rspd_line = false;
 		}
 

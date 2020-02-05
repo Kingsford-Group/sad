@@ -224,10 +224,10 @@ int32_t ReadBAMStartPos(string bamfile, const map<string, Transcript_t>& transcr
 	cout << "sum of weight = " << sum_weight << endl;
 
 
-	ReadBrdy.reserve(ReadBrdy.size());
+	ReadBrdy.shrink_to_fit();
 	sort(ReadBrdy.begin(), ReadBrdy.end());
 
-	JunctionBrdy.reserve(JunctionBrdy.size());
+	JunctionBrdy.shrink_to_fit();
 	sort(JunctionBrdy.begin(), JunctionBrdy.end());
 
 	return 0;

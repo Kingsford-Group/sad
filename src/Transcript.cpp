@@ -75,7 +75,7 @@ void ReadGTF (string GTFfile, vector<Transcript_t>& Transcripts)
 	for (vector<Transcript_t>::iterator it = Transcripts.begin(); it != Transcripts.end(); it++)
 		it->SortExons();
 
-	Transcripts.reserve(Transcripts.size());
+	Transcripts.shrink_to_fit();
 
 	// time info
 	time(&CurrentTime);
@@ -99,7 +99,7 @@ void TrimTranscripts (const map<string,double>& SalmonExp, vector<Transcript_t>&
 		if (itmap != SalmonExp.cend())
 			newTranscripts.push_back((*it));
 	}
-	newTranscripts.reserve(newTranscripts.size());
+	newTranscripts.shrink_to_fit();
 	Transcripts = newTranscripts;
 
 	time_t CurrentTime;
