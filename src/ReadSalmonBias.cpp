@@ -601,6 +601,7 @@ void CountStartPos(string startposfile, map< string,vector<double> >& StartCount
 	if(!input.good())
 		throw std::runtime_error(string("Can't open startpos file '" )+ startposfile + "'");
 	int32_t numtrans;
+	vector<char> buf;
 	input.read((char*)(&numtrans), sizeof(int32_t));
 	cout<<numtrans<<endl;
 	for(int32_t i=0; i<numtrans; i++){
@@ -608,13 +609,13 @@ void CountStartPos(string startposfile, map< string,vector<double> >& StartCount
 		input.read((char*)(&namelen), sizeof(int32_t));
 		input.read((char*)(&vectorlen), sizeof(int32_t));
 
-		char* buf=new char[namelen]();
+		buf.resize(namelen);
 		vector<int32_t> poses(vectorlen, 0);
 		vector<double> counts(vectorlen, 0);
-		input.read(buf, namelen*sizeof(char));
+		input.read((char*)(buf.data()), namelen*sizeof(char));
 		input.read((char*)poses.data(), vectorlen*sizeof(int32_t));
 		input.read((char*)counts.data(), vectorlen*sizeof(double));
-		string name(buf, buf+namelen);
+		string name(buf.begin(), buf.end());
 
 		vector<double> tmp((int32_t)poses.back()/binsize+1, 0);
 		for(uint32_t j=0; j<poses.size(); j++){
@@ -693,6 +694,7 @@ void WriteRawCorrection(string outfile, map< string,vector<double> >& Correction
 void TestReading(string infile, map< string,vector<double> >& Corrections){
 	ifstream fpin(infile, ios::binary);
 	int32_t numtrans;
+	vector<char> buf;
 	fpin.read((char*)&numtrans, sizeof(int32_t));
 	for(int32_t i=0; i<numtrans; i++){
 		int32_t namelen;
@@ -700,12 +702,12 @@ void TestReading(string infile, map< string,vector<double> >& Corrections){
 		fpin.read((char*)&namelen, sizeof(int32_t));
 		fpin.read((char*)&seqlen, sizeof(int32_t));
 
-		char* buf=new char[namelen];
+		buf.resize(namelen);
 		string name;
 		vector<double> mydata(seqlen, 0);
-		fpin.read(buf, namelen*sizeof(char));
+		fpin.read((char*)(buf.data()), namelen*sizeof(char));
 		fpin.read((char*)(mydata.data()), seqlen*sizeof(double));
-		name=string(buf);
+		name.assign(buf.begin(), buf.end());
 
 		vector<double> truedata=Corrections[name];
 		double sum=0;

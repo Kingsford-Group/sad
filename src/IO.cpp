@@ -69,11 +69,7 @@ void ReadCorrection(string correctionfile, const map<string,int32_t>& TransIndex
 	CurrentTimeStr=ctime(&CurrentTime);
 	cout<<"["<<CurrentTimeStr.substr(0, CurrentTimeStr.size()-1)<<"] "<<"Start reading "<<correctionfile<<endl;
 	// initialize variables
-	Expected.clear();
-	for(uint32_t i = 0; i < TransIndex.size(); i++){
-		vector<double> tmp;
-		Expected.push_back(tmp);
-	}
+	Expected.resize(TransIndex.size());
 	for(map<string,int32_t>::const_iterator it = TransIndex.cbegin(); it != TransIndex.cend(); it++){
 		map<string,int32_t>::const_iterator itlen = TransLength.find(it->first);
 		assert(itlen != TransLength.cend());
@@ -83,6 +79,7 @@ void ReadCorrection(string correctionfile, const map<string,int32_t>& TransIndex
 	// reading binary file
 	ifstream input(correctionfile, ios::binary);
 	int32_t numtrans;
+	vector<char> buf;
 	input.read((char*)(&numtrans), sizeof(int32_t));
 	for (int32_t i = 0; i < numtrans; i++){
 		// reading length info
@@ -91,12 +88,12 @@ void ReadCorrection(string correctionfile, const map<string,int32_t>& TransIndex
 		input.read((char*)&namelen, sizeof(int32_t));
 		input.read((char*)&seqlen, sizeof(int32_t));
 		// reading actual values
-		char* buf=new char[namelen];
+		buf.resize(namelen);
 		string name;
 		vector<double> mydata(seqlen, 0);
-		input.read(buf, namelen*sizeof(char));
+		input.read((char*)(buf.data()), namelen*sizeof(char));
 		input.read((char*)(mydata.data()), seqlen*sizeof(double));
-		name.assign(buf, namelen);
+		name.assign(buf.begin(), buf.end());
 		// find corresponding position
 		map<string,int32_t>::const_iterator itidx = TransIndex.find(name);
 		if (itidx != TransIndex.cend()){
@@ -120,11 +117,7 @@ void ReadStartpos(string startposfile, const map<string,int32_t>& TransIndex, co
 	CurrentTimeStr=ctime(&CurrentTime);
 	cout<<"["<<CurrentTimeStr.substr(0, CurrentTimeStr.size()-1)<<"] "<<"Start reading "<<startposfile<<endl;
 	// initialize variables
-	Observed.clear();
-	for(uint32_t i = 0; i < TransIndex.size(); i++){
-		vector<double> tmp;
-		Observed.push_back(tmp);
-	}
+	Observed.resize(TransIndex.size());
 	for(map<string,int32_t>::const_iterator it = TransIndex.cbegin(); it != TransIndex.cend(); it++){
 		map<string,int32_t>::const_iterator itlen = TransLength.find(it->first);
 		assert(itlen != TransLength.cend());
@@ -134,6 +127,7 @@ void ReadStartpos(string startposfile, const map<string,int32_t>& TransIndex, co
 	// reading binary file
 	ifstream input(startposfile, ios::binary);
 	int32_t numtrans;
+	vector<char> buf;
 	input.read((char*)(&numtrans), sizeof(int32_t));
 	for (int32_t i = 0; i < numtrans; i++){
 		// reading length info
@@ -142,12 +136,12 @@ void ReadStartpos(string startposfile, const map<string,int32_t>& TransIndex, co
 		input.read((char*)(&namelen), sizeof(int32_t));
 		input.read((char*)(&seqlen), sizeof(int32_t));
 		// reading actual values
-		char* buf = new char[namelen];
+		buf.resize(namelen);
 		string name;
 		vector<int32_t> poses(seqlen, 0);
 		vector<double> counts(seqlen, 0);
-		input.read(buf, namelen*sizeof(char));
-		name.assign(buf, namelen);
+		input.read((char*)(buf.data()), namelen*sizeof(char));
+		name.assign(buf.begin(), buf.end());
 		input.read((char*)(poses.data()), seqlen*sizeof(int32_t));
 		input.read((char*)(counts.data()), seqlen*sizeof(double));
 		// generate distribution from positions and counts
@@ -270,6 +264,7 @@ void ReadNewAssignment_Distribution(string inputfile, const map<string,int32_t>&
 	// read binary file
 	ifstream input(inputfile, ios::binary);
 	int32_t n;
+	vector<char> buf;
 	input.read((char*)&n, sizeof(int32_t));
 	for (int32_t i = 0; i < n; i++) {
 		int32_t namelen;
@@ -277,10 +272,10 @@ void ReadNewAssignment_Distribution(string inputfile, const map<string,int32_t>&
 		input.read((char*)&namelen, sizeof(int32_t));
 		input.read((char*)&seqlen, sizeof(int32_t));
 
-		char* buf=new char[namelen];
+		buf.resize(namelen);
 		string name;
 		vector<double> mydata(seqlen, 0);
-		input.read(buf, namelen*sizeof(char));
+		input.read((char*)buf.data(), namelen*sizeof(char));
 		input.read((char*)(mydata.data()), seqlen*sizeof(double));
 		for (int32_t j = 0; j < namelen; j++)
 			name += buf[j];

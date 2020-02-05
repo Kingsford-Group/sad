@@ -254,12 +254,12 @@ void DistTest_t::AdjustExpected(double nstdthresh)
 	cout<<"["<<CurrentTimeStr.substr(0, CurrentTimeStr.size()-1)<<"] "<<"Adjust expected distribution."<<endl;
 
 	// group expressed transcripts based on LenClass
-	vector< vector<int32_t> > lenTransIndexes;
-	for (uint32_t i = 0; i < lenBounds.size(); i++){
-		vector<int32_t> tmp;
-		tmp.reserve(int32_t(TransIndex.size()*0.1));
-		lenTransIndexes.push_back(tmp);
-	}
+	vector< vector<int32_t> > lenTransIndexes(lenBounds.size());
+	// for (uint32_t i = 0; i < lenBounds.size(); i++){
+	// 	vector<int32_t> tmp;
+	// 	tmp.reserve(int32_t(TransIndex.size()*0.1));
+	// 	lenTransIndexes.push_back(tmp);
+	// }
 	for (uint32_t i = 0; i < ExpectedBinNorm.size(); i++){
 		if (TransCov[i] > 0)
 			lenTransIndexes[ LenClass[i] ].push_back(i);
