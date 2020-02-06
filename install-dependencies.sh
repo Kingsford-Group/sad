@@ -76,7 +76,7 @@ fi
 
 
 # install jellyfish
-if $(pkg-config --exists jellyfish); then
+if $(pkg-config --exists jellyfish-2.0); then
 	echo "JELLYFISH library exists."
 else
 	echo "Install JELLYFISH..."
@@ -108,13 +108,6 @@ else
         cp $(find ${Dir}/external/Clp-1.17.5/Installation -name *.pc) ${Dir}/external/pkgconfig/
 fi
 
-
-# download spline.h
-echo "Download spline..."
-cd ${Dir}/external
-mkdir spline
-cd spline
-wget https://kluge.in-chemnitz.de/opensource/spline/spline.h
 
 echo
 echo "****************************************"

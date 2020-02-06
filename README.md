@@ -10,23 +10,25 @@ SAD depends on the following libraries:
 + [Jellyfish](https://github.com/gmarcais/Jellyfish)
 + [HTSlib](http://www.htslib.org/)
 + [Spline](https://kluge.in-chemnitz.de/opensource/spline/)
-+ [GUROBI](http://www.gurobi.com/)
++ either [GUROBI](http://www.gurobi.com/) or [Clp](https://projects.coin-or.org/Clp)
 
 For linux machine, the following script can be used to download and install the above dependencies EXCEPT GUROBI in current directory. Since GUROBI requires either commercial or academic license, we do not provide script for installation.
 ```
-./install.sh
+./install-dependencies.sh
 ```
 
 ## Compiling SAD
-After obtaining the prerequisite libraries, update pkg-config path to include the directory where the pkg-config files of dependencies are installed. If you install the dependencies using `install.sh` script, the pkg-config path can be updated by running the following command in shell:
+If you install the dependencies using `install-dependencies.sh` script, you will be indicated the command to configure. Using the following steps to compile and install SAD globally in your system:
 ```
-export PKG_CONFIG_PATH=<path to the installation directory>/external/pkgconfig:${PKG_CONFIG_PATH}
-```
-SAD can be compiled by
-```
-cd sad/
+autoreconf -i
+./configure <with options indicated after running install-dependencies.sh>
 make
+make install
 ```
+
+For local installation, further append the option `--prefix=<path to install>` in `./configure`.
+
+If you install the dependencies by you own, please see help of `./configure -h` to specify the paths of the dependent libraries.
 
 # Usage
 Three steps are needed for SAD: retrieve the observed coverage distribution, retrieve the expected coverage distribution, detect and categorize anomalies.
