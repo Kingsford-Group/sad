@@ -68,7 +68,7 @@ else
 	tar -xjvf htslib-1.9.tar.bz2
 	cd ${Dir}/external/htslib-1.9/
 	mkdir -p Installation
-	./configure --prefix=${Dir}/external/htslib-1.9/Installation
+	./configure --prefix=${Dir}/external/htslib-1.9/Installation --enable-plugins=no --enable-libcurl=no --enable-s3=no
 	make
 	make install
         cp $(find ${Dir}/external/htslib-1.9/Installation -name *.pc) ${Dir}/external/pkgconfig/
@@ -102,7 +102,7 @@ else
 	tar -zxf Clp-1.17.5.tgz
 	cd Clp-1.17.5/
 	mkdir -p Installation
-	./configure -C --prefix=${Dir}/external/Clp-1.17.5/Installation
+	./configure -C --prefix=${Dir}/external/Clp-1.17.5/Installation --enable-static
 	make
 	make install
         cp $(find ${Dir}/external/Clp-1.17.5/Installation -name *.pc) ${Dir}/external/pkgconfig/
@@ -117,4 +117,4 @@ echo
 echo "To configure with CLP, run: ./configure PKG_CONFIG_PATH=${PKG_CONFIG_PATH} BOOST_ROOT=${Dir}/external/boost_1_69_0/Installation"
 echo "To configure with gurobi, run: ./configure PKG_CONFIG_PATH=${PKG_CONFIG_PATH} --with-gurobi=<path to gurobi linux64 folder> BOOST_ROOT=${Dir}/external/boost_1_69_0/Installation"
 echo
-echo "Then compile and install with: make install
+echo "Then compile and install with: make install"
