@@ -12,7 +12,7 @@ AS_IF([test x$PYTHON3 = x],
       [AC_MSG_RESULT([no])]
       [AC_MSG_FAILURE([No python3 executable found])])
 
-AS_IF([$PYTHON3 --version | grep -q "^Python 3"],
+AS_IF([$PYTHON3 --version 2>&1 | grep -q "^Python 3"],
       [AC_MSG_RESULT([yes])],
       [AC_MSG_RESULT([no])]
       [AC_MSG_FAILURE([Python executable not version 3])])
