@@ -17,8 +17,11 @@ For linux machine, the following script can be used to download and install the 
 ./install-dependencies.sh
 ```
 
+## Binary release
+The pre-compiled binary of SAD (with Clp) can be downloaded from the [github release](https://github.com/Kingsford-Group/sad/releases).
+
 ## Compiling SAD
-If you install the dependencies using `install-dependencies.sh` script, you will be indicated the command to configure. Using the following steps to compile and install SAD globally in your system:
+To compile SAD from source, please download the packaged tarball from the [github release](https://github.com/Kingsford-Group/sad/releases) instead of `Source code` or using `git clone`. If you install the dependencies using `install-dependencies.sh` script, you will be indicated the command to configure. Using the following steps to compile and install SAD globally in your system:
 ```
 autoreconf -i
 ./configure <with options indicated after running install-dependencies.sh>
