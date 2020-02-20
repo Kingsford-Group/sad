@@ -1,4 +1,4 @@
-AC_INIT([sad], [0.0.1], [gmarcais@oceangenomics.com])
+AC_INIT([sad], [0.0.2-beta], [gmarcais@oceangenomics.com])
 AC_CANONICAL_HOST
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([subdir-objects foreign parallel-tests color-tests])
